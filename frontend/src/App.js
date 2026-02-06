@@ -1,45 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserProvider, formatUnits, parseUnits } from 'ethers';
 
+// Source chains
 const CHAINS = {
-  base: { id: 8453, name: 'Base', rpc: 'https://mainnet.base.org' },
-  polygon: { id: 137, name: 'Polygon' },
-  bsc: { id: 56, name: 'BNB Chain' }
+  eth: { id: 1, name: 'Ethereum', hex: '0x1' },
+  base: { id: 8453, name: 'Base', hex: '0x2105' },
+  bsc: { id: 56, name: 'BNB Chain', hex: '0x38' }
 };
 
+// Token addresses per chain
 const TOKENS = {
   USDC: {
-    base: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-    polygon: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',
-    bsc: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d'
+    eth: { address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', decimals: 6 },
+    base: { address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', decimals: 6 },
+    bsc: { address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', decimals: 18 }
   },
   USDT: {
-    base: '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2',
-    polygon: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F',
-    bsc: '0x55d398326f99059fF775485246999027B3197955'
+    eth: { address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6 },
+    base: { address: '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2', decimals: 6 },
+    bsc: { address: '0x55d398326f99059fF775485246999027B3197955', decimals: 18 }
   }
 };
+
+// Destination: Polygon USDC.e
+const DEST_CHAIN = { id: 137, name: 'Polygon' };
+const DEST_TOKEN = { address: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', symbol: 'USDC.e', decimals: 6 };
 
 const ERC20_ABI = [
   'function balanceOf(address) view returns (uint256)',
   'function decimals() view returns (uint8)',
-  'function approve(address spender, uint256 amount) returns (bool)',
-  'function allowance(address owner, address spender) view returns (uint256)'
+  'function approve(address spender, uint256 amount) returns (bool)'
 ];
 
 export default function App() {
   const [wallet, setWallet] = useState(null);
   const [provider, setProvider] = useState(null);
-  const [chainId, setChainId] = useState(null);
-  const [token, setToken] = useState('USDC');
-  const [toChain, setToChain] = useState('polygon');
+  const [walletChainId, setWalletChainId] = useState(null);
+  
+  const [fromChain, setFromChain] = useState('base');
+  const [fromToken, setFromToken] = useState('USDC');
   const [amount, setAmount] = useState('');
   const [balance, setBalance] = useState('0');
+  
   const [routes, setRoutes] = useState([]);
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
-  const [customRecipient, setCustomRecipient] = useState('');
+  
+  const debounceRef = useRef(null);
 
   // Create fresh provider
   const createProvider = () => new BrowserProvider(window.ethereum);
@@ -53,129 +61,129 @@ export default function App() {
     const network = await p.getNetwork();
     setProvider(p);
     setWallet(addr);
-    setChainId(Number(network.chainId));
+    setWalletChainId(Number(network.chainId));
 
-    // Listen for chain changes - recreate provider
     window.ethereum.on('chainChanged', (newChainId) => {
-      setChainId(Number(newChainId));
+      setWalletChainId(Number(newChainId));
       setProvider(createProvider());
     });
   };
 
-  // Switch to Base
-  const switchToBase = async () => {
+  // Switch chain
+  const switchChain = async (chainKey) => {
+    const chain = CHAINS[chainKey];
     try {
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0x2105' }]
+        params: [{ chainId: chain.hex }]
       });
     } catch (e) {
-      if (e.code === 4902) {
-        await window.ethereum.request({
-          method: 'wallet_addEthereumChain',
-          params: [{
-            chainId: '0x2105',
-            chainName: 'Base',
-            rpcUrls: ['https://mainnet.base.org'],
-            nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-            blockExplorerUrls: ['https://basescan.org']
-          }]
-        });
-      }
+      console.log('Switch chain error:', e);
     }
-    // chainChanged event will handle the rest
   };
 
   // Fetch balance
   useEffect(() => {
-    if (!wallet || !provider || chainId !== 8453) return;
+    if (!wallet || !provider) return;
+    const chain = CHAINS[fromChain];
+    if (walletChainId !== chain.id) return;
+    
     const fetchBalance = async () => {
       try {
         const { Contract } = await import('ethers');
-        const tokenAddr = TOKENS[token].base;
-        const contract = new Contract(tokenAddr, ERC20_ABI, provider);
+        const tokenInfo = TOKENS[fromToken][fromChain];
+        const contract = new Contract(tokenInfo.address, ERC20_ABI, provider);
         const bal = await contract.balanceOf(wallet);
-        const dec = await contract.decimals();
-        setBalance(formatUnits(bal, dec));
+        setBalance(formatUnits(bal, tokenInfo.decimals));
       } catch (e) {
-        console.log('Balance fetch error:', e.message);
+        console.log('Balance error:', e.message);
+        setBalance('0');
       }
     };
     fetchBalance();
-  }, [wallet, provider, chainId, token]);
+  }, [wallet, provider, walletChainId, fromChain, fromToken]);
 
-  // Get routes from LI.FI (multiple quotes with different bridges)
-  const getRoutes = async () => {
-    if (!amount || parseFloat(amount) <= 0) return;
+  // Auto-search routes with debounce
+  useEffect(() => {
+    if (!wallet || !amount || parseFloat(amount) <= 0) {
+      setRoutes([]);
+      setSelectedRoute(null);
+      return;
+    }
+    
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    
+    debounceRef.current = setTimeout(() => {
+      searchRoutes();
+    }, 1000);
+    
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [amount, fromChain, fromToken, wallet]);
+
+  // Search routes
+  const searchRoutes = async () => {
+    if (!wallet || !amount || parseFloat(amount) <= 0) return;
+    
     setLoading(true);
     setRoutes([]);
     setSelectedRoute(null);
-    setStatus('Fetching available bridges...');
+    setStatus('Searching routes...');
     
     try {
-      const decimals = 6;
-      const amountWei = parseUnits(amount, decimals).toString();
+      const tokenInfo = TOKENS[fromToken][fromChain];
+      const amountWei = parseUnits(amount, tokenInfo.decimals).toString();
       
-      // First get list of all bridges
+      // Get bridges
       const toolsResp = await fetch('https://li.quest/v1/tools');
       const toolsData = await toolsResp.json();
-      const allBridges = toolsData.bridges?.map(b => b.key) || [];
+      const bridges = toolsData.bridges?.map(b => b.key) || [];
       
-      setStatus(`Fetching quotes from ${allBridges.length} bridges...`);
+      setStatus(`Checking ${bridges.length} bridges...`);
       
       const baseUrl = 'https://li.quest/v1/quote';
       const params = new URLSearchParams({
-        fromChain: '8453',
-        toChain: String(CHAINS[toChain].id),
-        fromToken: TOKENS[token].base,
-        toToken: TOKENS[token][toChain],
+        fromChain: String(CHAINS[fromChain].id),
+        toChain: String(DEST_CHAIN.id),
+        fromToken: tokenInfo.address,
+        toToken: DEST_TOKEN.address,
         fromAddress: wallet,
-        toAddress: customRecipient || wallet,
+        toAddress: wallet,
         fromAmount: amountWei,
         slippage: '0.03'
       });
 
-      // Query all bridges in parallel
-      const bridgePromises = allBridges.map(async (bridge) => {
-        try {
-          const bridgeParams = new URLSearchParams(params);
-          bridgeParams.set('allowBridges', bridge);
-          const resp = await fetch(`${baseUrl}?${bridgeParams}`);
-          const data = await resp.json();
-          if (data.transactionRequest) {
-            return data;
-          }
-        } catch (e) {
-          // Ignore failed bridge requests
-        }
-        return null;
-      });
-
-      const bridgeResults = await Promise.all(bridgePromises);
-      const validRoutes = bridgeResults.filter(r => r !== null);
-
-      // Remove duplicates by tool and sort by output amount
-      const seen = new Set();
-      const uniqueRoutes = validRoutes
-        .filter(r => {
-          if (seen.has(r.tool)) return false;
-          seen.add(r.tool);
-          return true;
+      // Query bridges in parallel
+      const results = await Promise.all(
+        bridges.map(async (bridge) => {
+          try {
+            const bridgeParams = new URLSearchParams(params);
+            bridgeParams.set('allowBridges', bridge);
+            const resp = await fetch(`${baseUrl}?${bridgeParams}`);
+            const data = await resp.json();
+            if (data.transactionRequest) return data;
+          } catch (e) {}
+          return null;
         })
+      );
+
+      // Filter and sort
+      const seen = new Set();
+      const uniqueRoutes = results
+        .filter(r => r && !seen.has(r.tool) && seen.add(r.tool))
         .sort((a, b) => {
-          const amountA = BigInt(a.estimate?.toAmount || '0');
-          const amountB = BigInt(b.estimate?.toAmount || '0');
-          return amountB > amountA ? 1 : -1;
+          const amtA = BigInt(a.estimate?.toAmount || '0');
+          const amtB = BigInt(b.estimate?.toAmount || '0');
+          return amtB > amtA ? 1 : -1;
         });
 
-      console.log('Routes found:', uniqueRoutes.length, uniqueRoutes);
-      
       if (uniqueRoutes.length > 0) {
         setRoutes(uniqueRoutes);
         setSelectedRoute(uniqueRoutes[0]);
         setStatus(`Found ${uniqueRoutes.length} routes`);
       } else {
-        setStatus('No routes available for this pair');
+        setStatus('No routes found');
       }
     } catch (e) {
       setStatus('Error: ' + e.message);
@@ -183,7 +191,7 @@ export default function App() {
     setLoading(false);
   };
 
-  // Approve token
+  // Approve
   const approveToken = async () => {
     if (!selectedRoute) return;
     setLoading(true);
@@ -191,10 +199,12 @@ export default function App() {
     try {
       const { Contract } = await import('ethers');
       const signer = await provider.getSigner();
-      const tokenAddr = TOKENS[token].base;
-      const contract = new Contract(tokenAddr, ERC20_ABI, signer);
-      const spender = selectedRoute.estimate.approvalAddress;
-      const tx = await contract.approve(spender, parseUnits(amount, 6));
+      const tokenInfo = TOKENS[fromToken][fromChain];
+      const contract = new Contract(tokenInfo.address, ERC20_ABI, signer);
+      const tx = await contract.approve(
+        selectedRoute.estimate.approvalAddress,
+        parseUnits(amount, tokenInfo.decimals)
+      );
       await tx.wait();
       setStatus('Approved!');
     } catch (e) {
@@ -207,35 +217,29 @@ export default function App() {
   const executeBridge = async () => {
     if (!selectedRoute) return;
     setLoading(true);
-    setStatus('Sending transaction...');
+    setStatus('Sending...');
     try {
       const signer = await provider.getSigner();
-      
-      if (!selectedRoute.transactionRequest) {
-        throw new Error('No transaction data');
-      }
-      
       const tx = await signer.sendTransaction({
         to: selectedRoute.transactionRequest.to,
         data: selectedRoute.transactionRequest.data,
         value: selectedRoute.transactionRequest.value,
         gasLimit: selectedRoute.transactionRequest.gasLimit
       });
-      
-      setStatus(`Tx sent: ${tx.hash}`);
+      setStatus(`Tx: ${tx.hash}`);
       await tx.wait();
-      setStatus('Success! Bridge completed. Tx: ' + tx.hash);
+      setStatus('Success! ' + tx.hash);
     } catch (e) {
       setStatus('Failed: ' + e.message);
     }
     setLoading(false);
   };
 
-  const isBase = chainId === 8453;
+  const isCorrectChain = walletChainId === CHAINS[fromChain]?.id;
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>Base → Polygon/BNB Bridge</h1>
+      <h1 style={styles.title}>→ Polygon USDC.e</h1>
       
       {!wallet ? (
         <button style={styles.btn} onClick={connect}>Connect Wallet</button>
@@ -243,154 +247,125 @@ export default function App() {
         <div style={styles.card}>
           <p style={styles.wallet}>
             {wallet.slice(0, 6)}...{wallet.slice(-4)}
-            <br/>
-            <span style={{fontSize: 12}}>
-              Chain: {chainId} {isBase ? '✅ Base' : '⚠️ Not Base'}
-            </span>
           </p>
           
-          {!isBase ? (
-            <button style={styles.btn} onClick={switchToBase}>Switch to Base</button>
-          ) : (
+          <div style={styles.row}>
+            <label>From Chain:</label>
+            <select 
+              value={fromChain} 
+              onChange={e => setFromChain(e.target.value)} 
+              style={styles.select}
+            >
+              <option value="eth">Ethereum</option>
+              <option value="base">Base</option>
+              <option value="bsc">BNB Chain</option>
+            </select>
+          </div>
+
+          <div style={styles.row}>
+            <label>Token:</label>
+            <select 
+              value={fromToken} 
+              onChange={e => setFromToken(e.target.value)} 
+              style={styles.select}
+            >
+              <option value="USDC">USDC</option>
+              <option value="USDT">USDT</option>
+            </select>
+          </div>
+
+          <div style={styles.row}>
+            <label>Amount:</label>
+            <input
+              type="number"
+              value={amount}
+              onChange={e => setAmount(e.target.value)}
+              placeholder="0.00"
+              style={styles.input}
+            />
+          </div>
+
+          <p style={styles.balance}>
+            Balance: {parseFloat(balance).toFixed(2)} {fromToken}
+            {!isCorrectChain && <span style={{color: '#f59e0b'}}> (switch chain)</span>}
+          </p>
+
+          <div style={styles.destBox}>
+            <span style={styles.destLabel}>Destination</span>
+            <div style={styles.destInfo}>
+              <b>Polygon</b> → <span style={{color: '#4ade80'}}>USDC.e</span>
+            </div>
+          </div>
+
+          {!isCorrectChain && (
+            <button style={styles.btn} onClick={() => switchChain(fromChain)}>
+              Switch to {CHAINS[fromChain].name}
+            </button>
+          )}
+
+          {loading && <p style={styles.status}>{status}</p>}
+
+          {routes.length > 0 && (
             <>
-              <div style={styles.row}>
-                <label>Token:</label>
-                <select value={token} onChange={e => setToken(e.target.value)} style={styles.select}>
-                  <option value="USDC">USDC</option>
-                  <option value="USDT">USDT</option>
-                </select>
+              <div style={styles.routesHeader}>
+                {routes.length} routes found
               </div>
-
-              <div style={styles.row}>
-                <label>To Chain:</label>
-                <select value={toChain} onChange={e => setToChain(e.target.value)} style={styles.select}>
-                  <option value="polygon">Polygon</option>
-                  <option value="bsc">BNB Chain</option>
-                </select>
-              </div>
-
-              <div style={styles.row}>
-                <label>Amount:</label>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={e => setAmount(e.target.value)}
-                  placeholder="0.00"
-                  style={styles.input}
-                />
-              </div>
-
-              <p style={styles.balance}>Balance: {parseFloat(balance).toFixed(2)} {token}</p>
-
-              <div style={styles.row}>
-                <label>To address:</label>
-                <input
-                  type="text"
-                  value={customRecipient}
-                  onChange={e => setCustomRecipient(e.target.value)}
-                  placeholder="Same as sender"
-                  style={{...styles.input, width: 180, fontSize: 12}}
-                />
-              </div>
-
-              <button style={styles.btn} onClick={getRoutes} disabled={loading}>
-                {loading ? 'Loading...' : 'Get Routes'}
-              </button>
-
-              {routes.length > 0 && (
-                <>
-                  <div style={styles.routesHeader}>
-                    <span>{routes.length} routes found</span>
-                  </div>
-                  
-                  {routes.map((route, idx) => {
-                    const toAmount = route.estimate?.toAmount || '0';
-                    const toAmountMin = route.estimate?.toAmountMin || '0';
-                    const isSelected = selectedRoute === route;
-                    const gasCost = route.estimate?.gasCosts?.[0]?.amountUSD || '0';
-                    const execTime = route.estimate?.executionDuration || 60;
+              
+              {routes.map((route, idx) => {
+                const toAmt = route.estimate?.toAmount || '0';
+                const isSelected = selectedRoute === route;
+                const gas = route.estimate?.gasCosts?.[0]?.amountUSD || '0';
+                const time = route.estimate?.executionDuration || 60;
+                
+                return (
+                  <div 
+                    key={idx} 
+                    style={{
+                      ...styles.routeCard,
+                      border: isSelected ? '2px solid #667eea' : '1px solid #0f3460'
+                    }}
+                    onClick={() => setSelectedRoute(route)}
+                  >
+                    <div style={styles.routeCardHeader}>
+                      <div style={styles.routeCardLeft}>
+                        {idx === 0 && <span style={styles.bestBadge}>BEST</span>}
+                        <span style={styles.toolBadge}>
+                          {route.toolDetails?.name || route.tool}
+                        </span>
+                      </div>
+                      {isSelected && <span style={{color: '#4ade80'}}>✓</span>}
+                    </div>
                     
-                    return (
-                      <div 
-                        key={idx} 
-                        style={{
-                          ...styles.routeCard,
-                          border: isSelected ? '2px solid #667eea' : '1px solid #0f3460'
-                        }}
-                        onClick={() => setSelectedRoute(route)}
-                      >
-                        <div style={styles.routeCardHeader}>
-                          <div style={styles.routeCardLeft}>
-                            {idx === 0 && <span style={styles.bestBadge}>BEST</span>}
-                            <div style={styles.routeTools}>
-                              <span style={styles.toolBadge}>
-                                {route.toolDetails?.name || route.tool}
-                              </span>
-                              {route.includedSteps?.length > 1 && route.includedSteps.slice(1).map((s, i) => (
-                                <span key={i} style={styles.toolBadge}>
-                                  → {s.toolDetails?.name || s.tool}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                          <div style={styles.routeCardRight}>
-                            {isSelected && <span style={{color: '#4ade80'}}>✓</span>}
-                          </div>
-                        </div>
-                        
-                        <div style={styles.routeCardBody}>
-                          <div style={styles.routeAmount}>
-                            <span style={{color: '#4ade80', fontSize: 18}}>
-                              <b>{parseFloat(formatUnits(toAmount || '0', 6)).toFixed(2)}</b>
-                            </span>
-                            <span style={{color: '#888', fontSize: 12}}> {token}</span>
-                          </div>
-                          <div style={styles.routeMeta}>
-                            <span>⛽ ${parseFloat(gasCost).toFixed(2)}</span>
-                            <span>⏱️ ~{Math.ceil(execTime / 60)}min</span>
-                          </div>
-                        </div>
+                    <div style={styles.routeCardBody}>
+                      <div>
+                        <span style={{color: '#4ade80', fontSize: 18}}>
+                          <b>{parseFloat(formatUnits(toAmt, 6)).toFixed(2)}</b>
+                        </span>
+                        <span style={{color: '#888', fontSize: 12}}> USDC.e</span>
                       </div>
-                    );
-                  })}
-
-                  {selectedRoute && (
-                    <div style={styles.selectedDetails}>
-                      <div style={styles.addressBox}>
-                        <div style={styles.rateRow}>
-                          <span>📤 From</span>
-                          <span>{wallet?.slice(0,6)}...{wallet?.slice(-4)} (Base)</span>
-                        </div>
-                        <div style={styles.rateRow}>
-                          <span>📥 To</span>
-                          <span>{(customRecipient || wallet)?.slice(0,6)}...{(customRecipient || wallet)?.slice(-4)} ({CHAINS[toChain].name})</span>
-                        </div>
-                        <div style={styles.rateRow}>
-                          <span>🪙 Token</span>
-                          <span>{selectedRoute.action?.toToken?.symbol || token}</span>
-                        </div>
-                        <div style={styles.rateRow}>
-                          <span>💰 Receive</span>
-                          <span style={{color: '#4ade80'}}>{parseFloat(formatUnits(selectedRoute.estimate?.toAmount || '0', 6)).toFixed(2)} {token}</span>
-                        </div>
-                      </div>
-                      
-                      <div style={styles.btnRow}>
-                        <button style={styles.btnSecondary} onClick={approveToken} disabled={loading}>
-                          1. Approve
-                        </button>
-                        <button style={styles.btn} onClick={executeBridge} disabled={loading}>
-                          2. Bridge
-                        </button>
+                      <div style={styles.routeMeta}>
+                        <span>⛽ ${parseFloat(gas).toFixed(2)}</span>
+                        <span>⏱️ ~{Math.ceil(time / 60)}m</span>
                       </div>
                     </div>
-                  )}
-                </>
-              )}
+                  </div>
+                );
+              })}
 
-              {status && <p style={styles.status}>{status}</p>}
+              {selectedRoute && isCorrectChain && (
+                <div style={styles.btnRow}>
+                  <button style={styles.btnSecondary} onClick={approveToken} disabled={loading}>
+                    1. Approve
+                  </button>
+                  <button style={styles.btn} onClick={executeBridge} disabled={loading}>
+                    2. Bridge
+                  </button>
+                </div>
+              )}
             </>
           )}
+
+          {status && !loading && <p style={styles.status}>{status}</p>}
         </div>
       )}
     </div>
@@ -420,7 +395,7 @@ const styles = {
   wallet: {
     textAlign: 'center',
     color: '#888',
-    marginBottom: 16
+    marginBottom: 20
   },
   row: {
     display: 'flex',
@@ -452,6 +427,22 @@ const styles = {
     fontSize: 14,
     marginBottom: 16
   },
+  destBox: {
+    background: '#0f3460',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    textAlign: 'center'
+  },
+  destLabel: {
+    fontSize: 11,
+    color: '#888',
+    textTransform: 'uppercase'
+  },
+  destInfo: {
+    fontSize: 18,
+    marginTop: 8
+  },
   btn: {
     width: '100%',
     padding: '14px 20px',
@@ -479,111 +470,6 @@ const styles = {
     display: 'flex',
     marginTop: 16
   },
-  quoteBox: {
-    marginTop: 20,
-    padding: 16,
-    background: '#0f3460',
-    borderRadius: 12
-  },
-  routeHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
-    paddingBottom: 12,
-    borderBottom: '1px solid #1a1a2e'
-  },
-  toolLogo: {
-    width: 32,
-    height: 32,
-    borderRadius: 8
-  },
-  routeType: {
-    marginLeft: 8,
-    padding: '2px 8px',
-    background: '#667eea',
-    borderRadius: 4,
-    fontSize: 11
-  },
-  rateBox: {
-    background: '#1a1a2e',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12
-  },
-  rateRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: '6px 0',
-    fontSize: 14
-  },
-  feesBox: {
-    background: '#1a1a2e',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12
-  },
-  stepsBox: {
-    color: '#888',
-    textAlign: 'center',
-    marginBottom: 12
-  },
-  addressBox: {
-    background: '#1a1a2e',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12
-  },
-  addressText: {
-    fontFamily: 'monospace',
-    fontSize: 13
-  },
-  link: {
-    color: '#667eea',
-    textDecoration: 'none',
-    fontFamily: 'monospace',
-    fontSize: 13
-  },
-  tokenInfoBox: {
-    background: '#1a1a2e',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-    border: '1px solid #4ade80'
-  },
-  tokenHeader: {
-    fontSize: 11,
-    color: '#888',
-    marginBottom: 8,
-    textTransform: 'uppercase'
-  },
-  tokenRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 12
-  },
-  tokenLogo: {
-    width: 36,
-    height: 36,
-    borderRadius: 18
-  },
-  tokenName: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8
-  },
-  tokenChain: {
-    fontSize: 11,
-    padding: '2px 6px',
-    background: '#0f3460',
-    borderRadius: 4,
-    color: '#888'
-  },
-  tokenFullName: {
-    fontSize: 12,
-    color: '#888'
-  },
   routesHeader: {
     marginTop: 20,
     marginBottom: 12,
@@ -595,8 +481,7 @@ const styles = {
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
-    cursor: 'pointer',
-    transition: 'all 0.2s'
+    cursor: 'pointer'
   },
   routeCardHeader: {
     display: 'flex',
@@ -609,9 +494,6 @@ const styles = {
     alignItems: 'center',
     gap: 8
   },
-  routeCardRight: {
-    fontSize: 18
-  },
   bestBadge: {
     background: '#4ade80',
     color: '#000',
@@ -619,11 +501,6 @@ const styles = {
     borderRadius: 4,
     fontSize: 10,
     fontWeight: 700
-  },
-  routeTools: {
-    display: 'flex',
-    gap: 4,
-    flexWrap: 'wrap'
   },
   toolBadge: {
     background: '#1a1a2e',
@@ -636,18 +513,11 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'flex-end'
   },
-  routeAmount: {
-    display: 'flex',
-    alignItems: 'baseline'
-  },
   routeMeta: {
     display: 'flex',
     gap: 12,
     fontSize: 12,
     color: '#888'
-  },
-  selectedDetails: {
-    marginTop: 16
   },
   status: {
     marginTop: 16,
