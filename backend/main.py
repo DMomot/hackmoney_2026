@@ -409,7 +409,7 @@ async def get_order(order_id: str):
 
 
 @app.get("/api/positions")
-async def get_positions(wallet: str = Query(...), event_id: str = Query(None), team: str = Query(None)):
+async def get_positions(wallet: str = Query(...), event_id: str = Query(None), team: str = Query(None), side: str = Query(None)):
     """Return on-chain balances per platform for filled buy orders."""
     orders = _load_orders()
     wallet_lower = wallet.lower()
@@ -426,6 +426,8 @@ async def get_positions(wallet: str = Query(...), event_id: str = Query(None), t
         if event_id and o.get("event_id") != event_id:
             continue
         if team and o.get("team") != team:
+            continue
+        if side and o.get("side") != side:
             continue
         for pname, pdata in o.get("platforms", {}).items():
             tid = pdata.get("token_id")
@@ -451,9 +453,9 @@ async def get_positions(wallet: str = Query(...), event_id: str = Query(None), t
             if not adapter:
                 continue
             bal = adapter.get_user_shares_balance(token_id, wallet)
-            if bal <= 0:
-                continue
             decimals = PLATFORM_DECIMALS.get(platform, 6)
+            if bal / (10 ** decimals) < 1:
+                continue
             positions.append({
                 "order_id": meta["order_id"],
                 "event_id": meta["event_id"],

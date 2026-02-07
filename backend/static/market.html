@@ -299,9 +299,9 @@ function livePrice(team, side) {
 }
 
 function render() {
-  const o = event.outcomes[selectedOutcome];
+  const o = selectedOutcome !== null ? event.outcomes[selectedOutcome] : null;
   // Fallback tab if selected platform not available for this outcome
-  const available = teamPlatforms[o.name] || [];
+  const available = o ? (teamPlatforms[o.name] || []) : [];
   if (selectedTab !== 'pooled' && !available.includes(selectedTab)) {
     selectedTab = 'pooled';
   }
@@ -392,6 +392,7 @@ function render() {
 
     <!-- Right panel -->
     <div class="buy-panel">
+    ${!o ? '<div style="text-align:center;padding:40px;color:#999;">Select an outcome</div>' : `
       <div class="panel-header">
         <div class="panel-icon">${event.icon}</div>
         ${o.name}
@@ -460,32 +461,43 @@ function render() {
 
       ` : `
       <!-- SELL PANEL -->
-      ${!walletAddress ? '<div style="text-align:center;padding:20px;color:#999;">Connect wallet to sell</div>' :
-        !userPositions ? '<div style="text-align:center;padding:20px;color:#999;">Loading positions…</div>' :
-        userPositions.length === 0 ? '<div style="text-align:center;padding:20px;color:#999;">No positions for this outcome</div>' : `
+      <div class="field-label">Market</div>
+      <div class="market-prices">
+        <div class="market-price yes ${selectedSide === 'yes' ? 'active' : ''}" onclick="selectSide('yes')">
+          <div class="label">Yes</div>
+          <div class="val">${(livePrice(o.name, 'yes') || o.yesPrice).toFixed(1)}&#162;</div>
+        </div>
+        <div class="market-price no ${selectedSide === 'no' ? 'active' : ''}" onclick="selectSide('no')">
+          <div class="label">No</div>
+          <div class="val">${(livePrice(o.name, 'no') || o.noPrice).toFixed(1)}&#162;</div>
+        </div>
+      </div>
 
+      ${(() => {
+        const hasPos = userPositions && userPositions.length > 0;
+        const pos = hasPos && selectedPosition !== null ? userPositions[selectedPosition] : null;
+        const bestBid = pos ? liveBid(o.name, pos.side, pos.platform) : null;
+        const avail = pos ? pos.shares : 0;
+        const sellVal = sellAmount || avail;
+        const estReturn = bestBid && sellVal ? (sellVal * bestBid / 100).toFixed(2) : '—';
+        return `
       <div class="field-label">Your Position</div>
       <select class="amount-input" style="font-size:14px;padding:12px 14px;" onchange="selectPosition(parseInt(this.value))">
-        ${userPositions.map((pos, i) => {
-          const pl = PLATFORMS[pos.platform] || {name: pos.platform};
-          return `<option value="${i}" ${selectedPosition === i ? 'selected' : ''}>${pl.name} · ${pos.side.toUpperCase()} @ ${(pos.buy_price * 100).toFixed(1)}¢ · ${pos.shares.toFixed(2)} shares</option>`;
+        ${!hasPos ? '<option value="-1">No positions</option>' :
+        userPositions.map((p, i) => {
+          const pl = PLATFORMS[p.platform] || {name: p.platform};
+          return '<option value="'+i+'" '+(selectedPosition === i ? 'selected' : '')+'>'+pl.name+' · '+p.side.toUpperCase()+' @ '+(p.buy_price * 100).toFixed(1)+'¢ · '+p.shares.toFixed(2)+' shares</option>';
         }).join('')}
       </select>
 
-      ${selectedPosition !== null && userPositions[selectedPosition] ? (() => {
-        const pos = userPositions[selectedPosition];
-        const bestBid = liveBid(o.name, pos.side, pos.platform);
-        const sellShares = sellAmount || pos.shares;
-        const estReturn = bestBid ? (sellShares * bestBid / 100).toFixed(2) : '—';
-        return `
-      <div class="field-label" style="margin-top:16px;">Shares to sell</div>
-      <input type="number" class="amount-input" id="sellAmount" placeholder="${pos.shares.toFixed(2)}" value="${sellAmount || ''}" oninput="onSellAmountInput(this)" />
-      <div class="balance-line">Available: <b>${pos.shares.toFixed(2)} shares</b></div>
+      <div class="field-label" style="margin-top:16px;">Amount</div>
+      <input type="number" class="amount-input" id="sellAmount" placeholder="${avail ? avail.toFixed(2) : '0'}" value="${sellAmount || ''}" oninput="onSellAmountInput(this)" ${!pos ? 'disabled' : ''} />
+      <div class="balance-line">Available: <b>${avail ? avail.toFixed(2) : '0'} shares</b></div>
 
       <div class="quick-btns">
-        <button class="quick-btn" onclick="setSellAmount(${Math.floor(pos.shares * 0.25 * 100) / 100})">25%</button>
-        <button class="quick-btn" onclick="setSellAmount(${Math.floor(pos.shares * 0.5 * 100) / 100})">50%</button>
-        <button class="quick-btn" onclick="setSellAmount(${Math.floor(pos.shares * 100) / 100})">Max</button>
+        <button class="quick-btn" ${!pos ? 'disabled' : ''} onclick="setSellAmount(${Math.floor(avail * 0.25 * 100) / 100})">25%</button>
+        <button class="quick-btn" ${!pos ? 'disabled' : ''} onclick="setSellAmount(${Math.floor(avail * 0.5 * 100) / 100})">50%</button>
+        <button class="quick-btn" ${!pos ? 'disabled' : ''} onclick="setSellAmount(${Math.floor(avail * 100) / 100})">Max</button>
       </div>
 
       <div class="route-block">
@@ -495,11 +507,11 @@ function render() {
         </div>
       </div>
 
-      <button class="submit-btn" style="background:#dc2626;" onclick="submitSellOrder()">Sell</button>
+      <button class="submit-btn" style="background:#dc2626;" onclick="submitSellOrder()" ${!pos ? 'disabled' : ''}>Sell</button>
       `;
-      })() : '<div style="text-align:center;padding:16px;color:#999;font-size:13px;">Select a position above</div>'}
+      })()}
       `}
-      `}
+    `}
     </div>
   `;
 }
@@ -510,6 +522,11 @@ async function loadBooks(team) {
 }
 
 function selectOutcome(i, side) {
+  if (selectedOutcome === i && selectedSide === side) {
+    selectedOutcome = null;
+    renderKeepScroll();
+    return;
+  }
   selectedOutcome = i;
   selectedSide = side;
   routeResult = null;
@@ -529,6 +546,11 @@ function selectOutcome(i, side) {
 function selectSide(side) {
   selectedSide = side;
   routeResult = null;
+  if (panelTab === 'sell' && walletAddress) {
+    selectedPosition = null;
+    sellAmount = null;
+    loadPositions();
+  }
   renderKeepScroll();
 }
 
@@ -615,7 +637,7 @@ async function loadPositions() {
   const o = event.outcomes[selectedOutcome];
   const eventId = new URLSearchParams(location.search).get('id') || event.id;
   try {
-    const resp = await fetch(`/api/positions?wallet=${walletAddress}&event_id=${eventId}&team=${encodeURIComponent(o.name)}`);
+    const resp = await fetch(`/api/positions?wallet=${walletAddress}&event_id=${eventId}&team=${encodeURIComponent(o.name)}&side=${selectedSide}`);
     userPositions = await resp.json();
   } catch (e) {
     userPositions = [];
@@ -748,6 +770,7 @@ async function submitSellOrder() {
           setTxScanLink('done', `https://basescan.org/tx/${st.receiving_tx_hash}`);
         }
         done = true;
+        loadPositions();
       } else if (st.status === 'trade_failed') {
         setTxFailed('selling', st.trade_error || 'Sell failed');
         done = true;
@@ -881,6 +904,7 @@ async function submitOrder() {
           }
         }
         settled = true;
+        loadPositions();
       } else if (st.status === 'failed') {
         setTxFailed('bridging', 'Bridge failed');
         settled = true;
