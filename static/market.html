@@ -215,7 +215,9 @@
 
 <div class="top-bar">
   <a href="/" class="logo"><span>Predict</span> Aggregator</a>
-  <button class="connect-btn" id="walletBtn" onclick="connectWallet()">Connect Wallet</button>
+  <div class="wallet-wrap" id="walletWrap">
+    <button class="connect-btn" id="walletBtn" onclick="toggleWalletDropdown()">Connect Wallet</button>
+  </div>
 </div>
 
 <div class="layout" id="layout">
@@ -449,7 +451,7 @@ function render() {
         <span class="val">${routeResult ? '$' + routeResult.total_qty.toFixed(2) : '$0.00'}</span>
       </div>
 
-      <button class="submit-btn">Buy</button>
+      <button class="submit-btn" id="buyBtn" onclick="submitOrder()">Buy</button>
     </div>
   `;
 }
@@ -539,6 +541,110 @@ function updateBreakdown() {
   renderKeepScroll();
 }
 
+// --- Buy flow ---
+const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+const BASE_CHAIN_ID = '0x2105'; // 8453
+
+async function submitOrder() {
+  if (!walletAddress) { alert('Connect wallet first'); return; }
+  if (!routeResult || routeResult.total_spent <= 0) { alert('Enter amount first'); return; }
+
+  const o = event.outcomes[selectedOutcome];
+  const budget = routeResult.total_spent;
+  const cfg = await fetch('/api/config').then(r => r.json());
+  const routerAddr = cfg.router_address;
+  if (!routerAddr) { alert('Router not configured'); return; }
+
+  openTxModal();
+  setTxStep('approving');
+
+  try {
+    // Switch to Base if needed
+    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    if (chainId !== BASE_CHAIN_ID) {
+      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+    }
+
+    // Encode approve(router, amount)
+    const approveData = '0x095ea7b3' +
+      routerAddr.slice(2).toLowerCase().padStart(64, '0') +
+      BigInt(Math.round(budget * 1e6)).toString(16).padStart(64, '0');
+
+    const approveTx = await window.ethereum.request({
+      method: 'eth_sendTransaction',
+      params: [{ from: walletAddress, to: USDC_ADDRESS, data: approveData }],
+    });
+
+    setTxMsg('Waiting for confirmation…');
+
+    // Wait for approve confirmation
+    let receipt = null;
+    while (!receipt) {
+      await new Promise(r => setTimeout(r, 2000));
+      receipt = await window.ethereum.request({
+        method: 'eth_getTransactionReceipt',
+        params: [approveTx],
+      });
+    }
+
+    if (receipt.status !== '0x1') { setTxFailed('approving', 'Approve transaction reverted'); return; }
+
+    setTxStep('approved');
+    setTxScanLink('approved', `https://basescan.org/tx/${approveTx}`);
+
+    // Relay via backend
+    setTxStep('relaying');
+    const eventId = new URLSearchParams(location.search).get('id') || event.id;
+    const resp = await fetch('/api/order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        wallet: walletAddress,
+        event_id: eventId,
+        team: o.name,
+        side: selectedSide,
+        budget: budget,
+        route: routeResult,
+        approve_tx_hash: approveTx,
+      }),
+    });
+    const order = await resp.json();
+
+    if (order.status !== 'sent') {
+      setTxFailed('relaying', order.error || 'Relay failed');
+      return;
+    }
+
+    setTxStep('sent');
+    setTxScanLink('sent', `https://basescan.org/tx/${order.tx_hash}`);
+
+    // Poll order status for bridging
+    setTxStep('bridging');
+    setTxMsg('Waiting for bridge confirmation…');
+
+    let settled = false;
+    while (!settled) {
+      await new Promise(r => setTimeout(r, 5000));
+      const st = await fetch(`/api/order/${order.id}`).then(r => r.json());
+      if (st.status === 'filled') {
+        setTxDone('Order filled successfully');
+        if (st.receiving_tx_hash && st.receiving_chain_id) {
+          const scan = st.receiving_chain_id === 137 ? 'polygonscan.com' :
+                       st.receiving_chain_id === 8453 ? 'basescan.org' :
+                       st.receiving_chain_id === 1 ? 'etherscan.io' : 'basescan.org';
+          setTxScanLink('done', `https://${scan}/tx/${st.receiving_tx_hash}`);
+        }
+        settled = true;
+      } else if (st.status === 'failed') {
+        setTxFailed('bridging', 'Bridge or execution failed');
+        settled = true;
+      }
+    }
+  } catch (e) {
+    setTxFailed('approving', e.message || String(e));
+  }
+}
+
 init();
 
 // Wallet connection
@@ -560,18 +666,15 @@ function updateWalletBtn() {
 }
 
 async function connectWallet() {
-  if (walletAddress) {
-    walletAddress = null;
-    localStorage.removeItem('walletAddress');
-    updateWalletBtn();
-    return;
-  }
+  if (walletAddress) return;
   if (!window.ethereum) {
     alert('No wallet found. Install MetaMask or another wallet.');
     return;
   }
   try {
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    // Force account picker to open
+    await window.ethereum.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] });
+    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
     walletAddress = accounts[0];
     localStorage.setItem('walletAddress', walletAddress);
     updateWalletBtn();
@@ -596,5 +699,7 @@ async function connectWallet() {
   }
 })();
 </script>
+<script src="/static/tx-modal.js"></script>
+<script src="/static/wallet-dropdown.js"></script>
 </body>
 </html>

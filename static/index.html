@@ -119,7 +119,9 @@
 
 <div class="header">
   <div class="logo"><span>Predict</span> Aggregator</div>
-  <button class="connect-btn" id="walletBtn" onclick="connectWallet()">Connect Wallet</button>
+  <div class="wallet-wrap" id="walletWrap">
+    <button class="connect-btn" id="walletBtn" onclick="toggleWalletDropdown()">Connect Wallet</button>
+  </div>
 </div>
 
 <div class="container">
@@ -206,19 +208,14 @@ function updateWalletBtn() {
 }
 
 async function connectWallet() {
-  if (walletAddress) {
-    // Disconnect
-    walletAddress = null;
-    localStorage.removeItem('walletAddress');
-    updateWalletBtn();
-    return;
-  }
+  if (walletAddress) return;
   if (!window.ethereum) {
     alert('No wallet found. Install MetaMask or another wallet.');
     return;
   }
   try {
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    await window.ethereum.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] });
+    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
     walletAddress = accounts[0];
     localStorage.setItem('walletAddress', walletAddress);
     updateWalletBtn();
@@ -245,5 +242,6 @@ async function connectWallet() {
   }
 })();
 </script>
+<script src="/static/wallet-dropdown.js"></script>
 </body>
 </html>

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "409d171c",
+    "wallet": "0x1ED167f87F77Ee1059A7bF2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "budget": 1,
+    "route": {},
+    "status": "filled",
+    "approve_tx_hash": "0xb0c4a9b9601fb35600c95bc350e82fa3c670969061e5666ffd49dc079b43d0e1",
+    "tx_hash": "0x93d1f20ce874f7e9f21016536c1400d15dfcbb1249137a6166bb10832a8c6832",
+    "receiving_tx_hash": "0xf6f793efd16d671c8e0ff5e7ea31270373c295eaf340cae70d064efd970793f0",
+    "receiving_chain_id": 137,
+    "created_at": "2026-02-07T15:23:40.560177+00:00"
+  }
+]
