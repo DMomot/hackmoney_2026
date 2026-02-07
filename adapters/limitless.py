@@ -14,13 +14,19 @@ def _load_slugs():
 def _api_key():
     return os.getenv("LIMITLESS_API_KEY", "")
 
+def _enrich(levels):
+    for lv in levels:
+        lv["total"] = round(lv["price"] * lv["size"], 2)
+        lv["price_cents"] = round(lv["price"] * 100, 1)
+    return levels
+
+
 async def get_orderbook(event_id: str, team: str, side: str = "yes") -> dict:
-    """Fetch orderbook from Limitless for a specific team."""
+    """Fetch full orderbook from Limitless."""
     slugs = _load_slugs()
     event = slugs.get(event_id)
     if not event:
         return {"error": f"Event {event_id} not found"}
-
     slug = event["teams"].get(team)
     if not slug:
         return {"error": f"Team {team} not found in {event_id}"}
@@ -34,47 +40,23 @@ async def get_orderbook(event_id: str, team: str, side: str = "yes") -> dict:
         resp = await client.get(f"{API_URL}/markets/{slug}/orderbook", headers=headers)
         data = resp.json()
 
-    # Size is in USDC raw (6 decimals)
     divisor = 10 ** USDC_DECIMALS
-
     raw_bids = [{"price": float(b["price"]), "size": float(b["size"]) / divisor} for b in data.get("bids", [])]
     raw_asks = [{"price": float(a["price"]), "size": float(a["size"]) / divisor} for a in data.get("asks", [])]
 
-    # Limitless orderbook is for Yes token; if side=no, invert prices
     if side == "no":
         raw_bids, raw_asks = (
             [{"price": 1 - a["price"], "size": a["size"]} for a in raw_asks],
             [{"price": 1 - b["price"], "size": b["size"]} for b in raw_bids],
         )
 
-    # 5 lowest asks, reversed for display
-    asks = sorted(raw_asks, key=lambda x: x["price"])[:5][::-1]
-    # 5 highest bids
-    bids = sorted(raw_bids, key=lambda x: x["price"], reverse=True)[:5]
-
-    for level in asks + bids:
-        level["total"] = round(level["price"] * level["size"], 2)
-        level["price_cents"] = round(level["price"] * 100, 1)
-
-    best_ask = asks[-1]["price"] if asks else 0
-    best_bid = bids[0]["price"] if bids else 0
+    asks = _enrich(sorted(raw_asks, key=lambda x: x["price"]))
+    bids = _enrich(sorted(raw_bids, key=lambda x: x["price"], reverse=True))
 
     return {
         "platform": "limitless",
-        "event": event["event_title"],
-        "team": team,
-        "side": side,
-        "slug": slug,
-        "asks": asks,
-        "bids": bids,
-        "best_ask": round(best_ask * 100, 1),
-        "best_bid": round(best_bid * 100, 1),
+        "team": team, "side": side,
+        "asks": asks, "bids": bids,
+        "best_ask": asks[0]["price_cents"] if asks else 0,
+        "best_bid": bids[0]["price_cents"] if bids else 0,
     }
-
-async def get_teams(event_id: str) -> list[str]:
-    """Return list of available teams for an event."""
-    slugs = _load_slugs()
-    event = slugs.get(event_id)
-    if not event:
-        return []
-    return list(event["teams"].keys())

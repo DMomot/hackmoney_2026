@@ -9,17 +9,22 @@ def _load_tokens():
     with open(TOKENS_PATH) as f:
         return json.load(f)
 
+def _enrich(levels):
+    for lv in levels:
+        lv["total"] = round(lv["price"] * lv["size"], 2)
+        lv["price_cents"] = round(lv["price"] * 100, 1)
+    return levels
+
+
 async def get_orderbook(event_id: str, team: str, side: str = "yes") -> dict:
-    """Fetch orderbook from Polymarket CLOB for a specific team/outcome."""
+    """Fetch full orderbook from Polymarket CLOB."""
     tokens = _load_tokens()
     event = tokens.get(event_id)
     if not event:
         return {"error": f"Event {event_id} not found"}
-
     team_data = event["teams"].get(team)
     if not team_data:
         return {"error": f"Team {team} not found in {event_id}"}
-
     token_id = team_data.get(side)
     if not token_id:
         return {"error": f"Side {side} not found for {team}"}
@@ -31,35 +36,13 @@ async def get_orderbook(event_id: str, team: str, side: str = "yes") -> dict:
     raw_bids = [{"price": float(b["price"]), "size": float(b["size"])} for b in data.get("bids", [])]
     raw_asks = [{"price": float(a["price"]), "size": float(a["size"])} for a in data.get("asks", [])]
 
-    # 5 lowest asks (closest to spread), reversed for display (high->low)
-    asks = sorted(raw_asks, key=lambda x: x["price"])[:5][::-1]
-    # 5 highest bids (closest to spread), high->low
-    bids = sorted(raw_bids, key=lambda x: x["price"], reverse=True)[:5]
-
-    # Add total (price * size) to each level
-    for level in asks + bids:
-        level["total"] = round(level["price"] * level["size"], 2)
-        level["price_cents"] = round(level["price"] * 100, 1)
-
-    best_ask = asks[-1]["price"] if asks else 0
-    best_bid = bids[0]["price"] if bids else 0
+    asks = _enrich(sorted(raw_asks, key=lambda x: x["price"]))
+    bids = _enrich(sorted(raw_bids, key=lambda x: x["price"], reverse=True))
 
     return {
         "platform": "polymarket",
-        "event": event["event_title"],
-        "team": team,
-        "side": side,
-        "token_id": token_id,
-        "asks": asks,
-        "bids": bids,
-        "best_ask": round(best_ask * 100, 1),
-        "best_bid": round(best_bid * 100, 1),
+        "team": team, "side": side,
+        "asks": asks, "bids": bids,
+        "best_ask": asks[0]["price_cents"] if asks else 0,
+        "best_bid": bids[0]["price_cents"] if bids else 0,
     }
-
-async def get_teams(event_id: str) -> list[str]:
-    """Return list of available teams for an event."""
-    tokens = _load_tokens()
-    event = tokens.get(event_id)
-    if not event:
-        return []
-    return list(event["teams"].keys())

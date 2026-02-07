@@ -6,7 +6,7 @@ from fastapi import FastAPI, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from adapters import polymarket, limitless, opinion
-from utils.utils import build_pooled
+from utils.utils import build_pooled, find_optimal_route
 
 load_dotenv()
 
@@ -61,26 +61,10 @@ async def event_platforms(event_id: str = Query(...)):
     return _platform_teams.get(event_id, {})
 
 
-@app.get("/api/orderbook")
-async def orderbook(
-    event_id: str = Query(...),
-    team: str = Query(...),
-    side: str = Query("yes"),
-    platform: str = Query("polymarket"),
-):
-    adapter = ADAPTERS.get(platform)
-    if not adapter:
-        return {"error": f"Unknown platform: {platform}"}
-    return await adapter.get_orderbook(event_id, team, side)
-
-
 def _build_side(books: list[dict], team: str, side: str) -> dict:
     """Build pooled orderbook for one side from a list of platform books."""
-    pooled_asks_raw = build_pooled(books, "asks")
-    pooled_bids_raw = build_pooled(books, "bids")
-
-    asks = sorted(pooled_asks_raw, key=lambda x: x["price"])[:5][::-1]
-    bids = sorted(pooled_bids_raw, key=lambda x: x["price"], reverse=True)[:5]
+    asks = sorted(build_pooled(books, "asks"), key=lambda x: x["price"])
+    bids = sorted(build_pooled(books, "bids"), key=lambda x: x["price"], reverse=True)
 
     return {
         "platform": "pooled",
@@ -88,7 +72,7 @@ def _build_side(books: list[dict], team: str, side: str) -> dict:
         "side": side,
         "asks": asks,
         "bids": bids,
-        "best_ask": asks[-1]["price_cents"] if asks else 0,
+        "best_ask": asks[0]["price_cents"] if asks else 0,
         "best_bid": bids[0]["price_cents"] if bids else 0,
     }
 
@@ -129,3 +113,33 @@ async def orderbook_all(
         }
 
     return sides
+
+
+@app.get("/api/route")
+async def route(
+    event_id: str = Query(...),
+    team: str = Query(...),
+    side: str = Query("yes"),
+    budget: float = Query(...),
+    direction: str = Query("buy"),
+):
+    """Find optimal order route across all platforms."""
+    # Fetch full orderbooks in parallel
+    tasks = {
+        name: adapter.get_orderbook(event_id, team, side)
+        for name, adapter in ADAPTERS.items()
+    }
+    results = await asyncio.gather(*tasks.values(), return_exceptions=True)
+
+    full_books = []
+    errors = {}
+    for name, res in zip(tasks.keys(), results):
+        if isinstance(res, Exception):
+            errors[name] = str(res)
+        else:
+            full_books.append(res)
+
+    result = find_optimal_route(full_books, budget, direction)
+    if errors:
+        result["adapter_errors"] = errors
+    return result
