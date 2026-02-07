@@ -10,9 +10,12 @@ def _load_tokens():
         return json.load(f)
 
 def _enrich(levels):
+    cumsum = 0
     for lv in levels:
         lv["total"] = round(lv["price"] * lv["size"], 2)
         lv["price_cents"] = round(lv["price"] * 100, 1)
+        cumsum += lv["total"]
+        lv["cumsum"] = round(cumsum, 2)
     return levels
 
 

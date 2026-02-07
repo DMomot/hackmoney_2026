@@ -13,16 +13,20 @@ def build_pooled(books: list[dict], side_key: str) -> list[dict]:
                 grid[price_key] += level["size"]
 
     result = []
+    cumsum = 0
     for key in sorted(grid.keys()):
         if grid[key] > 0:
             price = key / 10
             price_dec = price / 100
             size = round(grid[key], 2)
+            total = round(price_dec * size, 2)
+            cumsum += total
             result.append({
                 "price": round(price_dec, 4),
                 "size": size,
-                "total": round(price_dec * size, 2),
+                "total": total,
                 "price_cents": round(price, 1),
+                "cumsum": round(cumsum, 2),
             })
     return result
 
@@ -84,47 +88,56 @@ def find_optimal_route(
     fills = []  # individual fills
     per_platform = {}  # platform -> {spent, qty}
 
+    def consume(lv):
+        nonlocal remaining
+        if remaining <= 0:
+            return
+        p = lv["platform"]
+        available_cost = lv["price"] * lv["size"]
+        if direction == "buy":
+            spend = min(remaining, available_cost)
+            qty = spend / lv["price"] if lv["price"] > 0 else 0
+        else:
+            qty = min(remaining, lv["size"])
+            spend = qty * lv["price"]
+        if qty <= 0:
+            return
+        fills.append({
+            "platform": p,
+            "price": lv["price"],
+            "price_cents": lv["price_cents"],
+            "size": round(qty, 4),
+            "cost": round(spend, 4),
+        })
+        if p not in per_platform:
+            per_platform[p] = {"spent": 0.0, "qty": 0.0}
+        per_platform[p]["spent"] += spend
+        per_platform[p]["qty"] += qty
+        used_platforms.add(p)
+        remaining -= spend if direction == "buy" else qty
+
     for price, group in grouped:
         if remaining <= 0:
             break
 
-        # Sort group: already-used platforms first to minimize source count
-        group.sort(key=lambda x: (x["platform"] not in used_platforms, x["platform"]))
+        # 1) Consume from already-used platforms first
+        known = [lv for lv in group if lv["platform"] in used_platforms]
+        for lv in known:
+            consume(lv)
 
-        for lv in group:
-            if remaining <= 0:
-                break
-
-            p = lv["platform"]
-            available_cost = lv["price"] * lv["size"]
-
-            if direction == "buy":
-                # How much USDC we can spend on this level
-                spend = min(remaining, available_cost)
-                qty = spend / lv["price"] if lv["price"] > 0 else 0
-            else:
-                # Sell: budget is qty of shares to sell
-                qty = min(remaining, lv["size"])
-                spend = qty * lv["price"]
-
-            if qty <= 0:
-                continue
-
-            fills.append({
-                "platform": p,
-                "price": lv["price"],
-                "price_cents": lv["price_cents"],
-                "size": round(qty, 4),
-                "cost": round(spend, 4),
-            })
-
-            if p not in per_platform:
-                per_platform[p] = {"spent": 0.0, "qty": 0.0}
-            per_platform[p]["spent"] += spend
-            per_platform[p]["qty"] += qty
-
-            used_platforms.add(p)
-            remaining -= spend if direction == "buy" else qty
+        # 2) If still remaining, pick the single new platform with most liquidity
+        if remaining > 0:
+            new = [lv for lv in group if lv["platform"] not in used_platforms]
+            if new:
+                # Aggregate volume per new platform at this price
+                vol = {}
+                for lv in new:
+                    vol.setdefault(lv["platform"], 0)
+                    vol[lv["platform"]] += lv["price"] * lv["size"]
+                best_new = max(vol, key=vol.get)
+                for lv in new:
+                    if lv["platform"] == best_new:
+                        consume(lv)
 
     total_spent = sum(v["spent"] for v in per_platform.values())
     total_qty = sum(v["qty"] for v in per_platform.values())

@@ -14,9 +14,12 @@ def _api_key():
     return os.getenv("OPINION_API_KEY", "")
 
 def _enrich(levels):
+    cumsum = 0
     for lv in levels:
         lv["total"] = round(lv["price"] * lv["size"], 2)
         lv["price_cents"] = round(lv["price"] * 100, 1)
+        cumsum += lv["total"]
+        lv["cumsum"] = round(cumsum, 2)
     return levels
 
 

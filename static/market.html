@@ -178,11 +178,12 @@
     .route-row .platform-dot img { width: 100%; height: 100%; object-fit: cover; }
     .route-empty { padding: 14px 16px; text-align: center; font-size: 13px; color: #bbb; }
 
-    .avg-price {
-      display: flex; justify-content: space-between; padding: 12px 0;
-      border-top: 1px solid #f0f0f0; margin-bottom: 16px;
-      font-size: 14px; font-weight: 600;
+    .to-win {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 0; margin-bottom: 16px; font-size: 14px;
     }
+    .to-win .label { color: #888; font-weight: 500; }
+    .to-win .val { font-size: 20px; font-weight: 700; color: #16a34a; }
 
     .submit-btn {
       width: 100%; padding: 16px; border-radius: 12px; border: none;
@@ -363,7 +364,7 @@ function render() {
                     <thead><tr><th>Price</th><th>Size</th><th>Total</th></tr></thead>
                     <tbody>
                       ${fb.asks.slice(0,5).reverse().map(a => `
-                        <tr><td class="price-ask">${a.price_cents}&#162;</td><td>${a.size.toLocaleString()}</td><td>$${a.total.toLocaleString()}</td></tr>
+                        <tr><td class="price-ask">${a.price_cents}&#162;</td><td>${a.size.toLocaleString()}</td><td>$${a.cumsum.toLocaleString()}</td></tr>
                       `).join('')}
                     </tbody>
                   </table>
@@ -371,7 +372,7 @@ function render() {
                   <table class="book-table">
                     <tbody>
                       ${fb.bids.slice(0,5).map(b => `
-                        <tr><td class="price-bid">${b.price_cents}&#162;</td><td>${b.size.toLocaleString()}</td><td>$${b.total.toLocaleString()}</td></tr>
+                        <tr><td class="price-bid">${b.price_cents}&#162;</td><td>${b.size.toLocaleString()}</td><td>$${b.cumsum.toLocaleString()}</td></tr>
                       `).join('')}
                     </tbody>
                   </table>`}
@@ -443,6 +444,11 @@ function render() {
         <div class="route-empty">&mdash;</div>`}
       </div>
 
+      <div class="to-win">
+        <span class="label">To win</span>
+        <span class="val">${routeResult ? '$' + routeResult.total_qty.toFixed(2) : '$0.00'}</span>
+      </div>
+
       <button class="submit-btn">Buy</button>
     </div>
   `;
@@ -485,7 +491,11 @@ function switchPlatform(platform) {
 
 function renderKeepScroll() {
   const y = window.scrollY;
+  const amountEl = document.getElementById('amount');
+  const amountVal = amountEl ? amountEl.value : '';
   render();
+  const newAmountEl = document.getElementById('amount');
+  if (newAmountEl) newAmountEl.value = amountVal;
   window.scrollTo(0, y);
 }
 
@@ -523,11 +533,6 @@ async function fetchRoute(amount) {
     routeResult = null;
   }
   updateBreakdown();
-}
-
-function toggleRoute() {
-  routeOpen = !routeOpen;
-  renderKeepScroll();
 }
 
 function updateBreakdown() {
