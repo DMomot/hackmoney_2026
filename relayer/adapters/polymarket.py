@@ -240,10 +240,12 @@ class PolymarketAdapter(BaseAdapter):
 
         options = PartialCreateOrderOptions(neg_risk=neg_risk)
 
+        import math
         if side.upper() == "BUY":
-            order_amount = float(Decimal(str(amount)) * Decimal(str(price)))
+            # Floor to 2 decimals — USDC cents, avoid exceeding balance
+            order_amount = math.floor(float(Decimal(str(amount)) * Decimal(str(price))) * 100) / 100
         else:
-            order_amount = amount
+            order_amount = math.floor(amount * 100) / 100
 
         order_args = MarketOrderArgs(
             token_id=token_id,
@@ -262,6 +264,30 @@ class PolymarketAdapter(BaseAdapter):
         order_id = response.get("orderID") or response.get("orderId")
         logger.info(f"Order placed: id={order_id}, status={response.get('status')}")
 
+        # Extract signed order params
+        order_data = signed_order.dict() if hasattr(signed_order, 'dict') else (
+            signed_order.__dict__ if hasattr(signed_order, '__dict__') else {}
+        )
+        response["_params"] = {
+            "salt": order_data.get("salt"),
+            "maker": order_data.get("maker"),
+            "signer": order_data.get("signer"),
+            "taker": order_data.get("taker"),
+            "tokenId": order_data.get("tokenId") or order_data.get("token_id") or token_id,
+            "makerAmount": order_data.get("makerAmount") or order_data.get("maker_amount"),
+            "takerAmount": order_data.get("takerAmount") or order_data.get("taker_amount"),
+            "expiration": order_data.get("expiration"),
+            "nonce": order_data.get("nonce"),
+            "feeRateBps": order_data.get("feeRateBps") or order_data.get("fee_rate_bps"),
+            "side": order_data.get("side"),
+            "signatureType": order_data.get("signatureType") or order_data.get("signature_type"),
+            "signature": order_data.get("signature"),
+            "neg_risk": neg_risk,
+            "market_id": market_id,
+            "price": price,
+            "amount": amount,
+            "order_amount": order_amount,
+        }
         return response
 
     # --- Market Info ---
@@ -392,6 +418,65 @@ class PolymarketAdapter(BaseAdapter):
             "nonce": self.w3.eth.get_transaction_count(proxy), "chainId": self.CHAIN_ID,
         })
         return self._send_tx(tx)
+
+    # --- Balance & Transfer ---
+
+    def get_shares_balance(self, token_id: str) -> int:
+        """Return raw CTF balance (6 decimals) for token_id on relayer wallet."""
+        if not self.w3:
+            raise RuntimeError("Web3 not initialized")
+        abi = [{"inputs": [{"name": "account", "type": "address"}, {"name": "id", "type": "uint256"}],
+                "name": "balanceOf", "outputs": [{"type": "uint256"}], "stateMutability": "view", "type": "function"}]
+        ctf = self.w3.eth.contract(address=Web3.to_checksum_address(self.CTF_ADDRESS), abi=abi)
+        return ctf.functions.balanceOf(self.account.address, int(token_id)).call()
+
+    def get_user_shares_balance(self, token_id: str, user_address: str) -> int:
+        """Return raw CTF balance for token_id on any address."""
+        if not self.w3:
+            raise RuntimeError("Web3 not initialized")
+        abi = [{"inputs": [{"name": "account", "type": "address"}, {"name": "id", "type": "uint256"}],
+                "name": "balanceOf", "outputs": [{"type": "uint256"}], "stateMutability": "view", "type": "function"}]
+        ctf = self.w3.eth.contract(address=Web3.to_checksum_address(self.CTF_ADDRESS), abi=abi)
+        return ctf.functions.balanceOf(Web3.to_checksum_address(user_address), int(token_id)).call()
+
+    def get_usdc_balance(self) -> int:
+        """Return raw USDC.e balance (6 decimals) on relayer wallet."""
+        if not self.w3:
+            raise RuntimeError("Web3 not initialized")
+        abi = [{"inputs": [{"name": "account", "type": "address"}], "name": "balanceOf",
+                "outputs": [{"type": "uint256"}], "type": "function"}]
+        usdc = self.w3.eth.contract(address=Web3.to_checksum_address(self.USDC_ADDRESS), abi=abi)
+        return usdc.functions.balanceOf(self.account.address).call()
+
+    def transfer_shares(self, token_id: str, to_address: str, amount: int) -> dict:
+        """Transfer ERC1155 shares from relayer to user. Returns {tx_hash, success}."""
+        if not self.w3 or not self.account:
+            raise RuntimeError("Web3 not initialized")
+        abi = [{"inputs": [
+            {"name": "from", "type": "address"}, {"name": "to", "type": "address"},
+            {"name": "id", "type": "uint256"}, {"name": "amount", "type": "uint256"},
+            {"name": "data", "type": "bytes"}],
+            "name": "safeTransferFrom", "outputs": [], "stateMutability": "nonpayable", "type": "function"}]
+        ctf = self.w3.eth.contract(address=Web3.to_checksum_address(self.CTF_ADDRESS), abi=abi)
+        gas_price = self.w3.eth.gas_price
+        tx = ctf.functions.safeTransferFrom(
+            self.account.address,
+            Web3.to_checksum_address(to_address),
+            int(token_id), amount, b"",
+        ).build_transaction({
+            "from": self.account.address,
+            "nonce": self.w3.eth.get_transaction_count(self.account.address, "pending"),
+            "gas": 100000,
+            "maxFeePerGas": int(gas_price * 1.3),
+            "maxPriorityFeePerGas": min(int(gas_price * 0.3), int(30e9)),
+            "chainId": self.CHAIN_ID,
+        })
+        signed = self.w3.eth.account.sign_transaction(tx, self.private_key)
+        tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
+        receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+        h = "0x" + tx_hash.hex() if not tx_hash.hex().startswith("0x") else tx_hash.hex()
+        logger.info(f"Transfer shares tx={h}, status={receipt['status']}")
+        return {"tx_hash": h, "success": receipt["status"] == 1}
 
     # --- Orderbook ---
 

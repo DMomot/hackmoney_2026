@@ -1,24 +1,31 @@
 // Transaction status modal
-// Steps: approving → approved → relaying → sent → bridging → trading → done / failed
+// Buy steps: approving → approved → relaying → sent → bridging → trading → settling → done
+// Sell steps: approving_sell → pulling → selling → settling_sell → bridging_back → done
 
-const TX_STEPS = ['approving','approved','relaying','sent','bridging','trading','done'];
+const BUY_STEPS = ['approving','approved','relaying','sent','bridging','trading','settling','done'];
+const SELL_STEPS = ['approving_sell','pulling','selling','settling_sell','bridging_back','done'];
 
-const TX_LABELS = {
+const ALL_LABELS = {
+  // Buy
   approving: 'Approving USDC…',
   approved:  'USDC Approved',
   relaying:  'Relaying to Router…',
   sent:      'Transaction Sent',
   bridging:  'Bridging via LiFi…',
   trading:   'Placing Orders…',
+  settling:  'Delivering Shares…',
   done:      'Complete',
   failed:    'Failed',
+  // Sell
+  approving_sell: 'Approving Relayer…',
+  pulling:        'Pulling Shares…',
+  selling:        'Selling on Market…',
+  settling_sell:  'Waiting for USDC…',
+  bridging_back:  'Bridging to Base…',
 };
 
-// Which steps can have scan links
-const SCAN_STEPS = ['approved','sent','bridging','trading','done'];
-
 let _modalEl = null;
-let _stepLinks = {}; // step -> { url, label }
+let _activeSteps = BUY_STEPS;
 
 function _createModal() {
   if (_modalEl) return _modalEl;
@@ -89,13 +96,13 @@ function _createModal() {
 
 const _scanIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
 
-function openTxModal() {
+function openTxModal(mode) {
   const m = _createModal();
-  _stepLinks = {};
-  const stepsHtml = TX_STEPS.map(s =>
+  _activeSteps = mode === 'sell' ? SELL_STEPS : BUY_STEPS;
+  const stepsHtml = _activeSteps.map(s =>
     `<div class="txm-step" data-step="${s}">
       <div class="txm-dot"></div>
-      <span class="txm-label">${TX_LABELS[s]}</span>
+      <span class="txm-label">${ALL_LABELS[s]}</span>
       <a class="txm-scan" id="txmScan_${s}" href="#" target="_blank">${_scanIcon}</a>
     </div>`
   ).join('');
@@ -106,7 +113,7 @@ function openTxModal() {
 
 function setTxStep(step) {
   const steps = document.querySelectorAll('.txm-step');
-  const idx = TX_STEPS.indexOf(step);
+  const idx = _activeSteps.indexOf(step);
   steps.forEach((el, i) => {
     el.classList.remove('active','done','failed');
     if (i < idx) el.classList.add('done');
@@ -116,7 +123,7 @@ function setTxStep(step) {
 
 function setTxFailed(atStep, msg) {
   const steps = document.querySelectorAll('.txm-step');
-  const idx = TX_STEPS.indexOf(atStep);
+  const idx = _activeSteps.indexOf(atStep);
   steps.forEach((el, i) => {
     el.classList.remove('active','done','failed');
     if (i < idx) el.classList.add('done');
@@ -134,7 +141,6 @@ function setTxDone(msg) {
   document.getElementById('txmMsg').textContent = msg || '';
 }
 
-// Set scan link for a specific step
 function setTxScanLink(step, url) {
   const el = document.getElementById('txmScan_' + step);
   if (!el) return;

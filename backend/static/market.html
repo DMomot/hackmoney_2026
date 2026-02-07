@@ -260,7 +260,11 @@ function getBook(team, side, tab) {
 let selectedOutcome = 0;
 let selectedSide = 'yes';
 let selectedTab = 'pooled'; // which platform tab is active
+let panelTab = 'buy'; // 'buy' or 'sell'
 let event = null;
+let userPositions = null;
+let selectedPosition = null;
+let sellAmount = null;
 
 // Per-team platform availability: { "Spain": ["polymarket","limitless","opinion"], ... }
 let teamPlatforms = {};
@@ -394,10 +398,11 @@ function render() {
       </div>
 
       <div class="panel-tabs">
-        <button class="panel-tab active">Buy</button>
-        <button class="panel-tab">Sell</button>
+        <button class="panel-tab ${panelTab === 'buy' ? 'active' : ''}" onclick="switchPanel('buy')">Buy</button>
+        <button class="panel-tab ${panelTab === 'sell' ? 'active' : ''}" onclick="switchPanel('sell')">Sell</button>
       </div>
 
+      ${panelTab === 'buy' ? `
       <div class="field-label">Market</div>
       <div class="market-prices">
         <div class="market-price yes ${selectedSide === 'yes' ? 'active' : ''}" onclick="selectSide('yes')">
@@ -452,6 +457,49 @@ function render() {
       </div>
 
       <button class="submit-btn" id="buyBtn" onclick="submitOrder()">Buy</button>
+
+      ` : `
+      <!-- SELL PANEL -->
+      ${!walletAddress ? '<div style="text-align:center;padding:20px;color:#999;">Connect wallet to sell</div>' :
+        !userPositions ? '<div style="text-align:center;padding:20px;color:#999;">Loading positions…</div>' :
+        userPositions.length === 0 ? '<div style="text-align:center;padding:20px;color:#999;">No positions for this outcome</div>' : `
+
+      <div class="field-label">Your Position</div>
+      <select class="amount-input" style="font-size:14px;padding:12px 14px;" onchange="selectPosition(parseInt(this.value))">
+        ${userPositions.map((pos, i) => {
+          const pl = PLATFORMS[pos.platform] || {name: pos.platform};
+          return `<option value="${i}" ${selectedPosition === i ? 'selected' : ''}>${pl.name} · ${pos.side.toUpperCase()} @ ${(pos.buy_price * 100).toFixed(1)}¢ · ${(pos.shares / 1e6).toFixed(2)} shares</option>`;
+        }).join('')}
+      </select>
+
+      ${selectedPosition !== null && userPositions[selectedPosition] ? (() => {
+        const pos = userPositions[selectedPosition];
+        const bestBid = liveBid(o.name, pos.side, pos.platform);
+        const sellShares = sellAmount || (pos.shares / 1e6);
+        const estReturn = bestBid ? (sellShares * bestBid / 100).toFixed(2) : '—';
+        return `
+      <div class="field-label" style="margin-top:16px;">Shares to sell</div>
+      <input type="number" class="amount-input" id="sellAmount" placeholder="${(pos.shares / 1e6).toFixed(2)}" value="${sellAmount || ''}" oninput="onSellAmountInput(this)" />
+      <div class="balance-line">Available: <b>${(pos.shares / 1e6).toFixed(2)} shares</b></div>
+
+      <div class="quick-btns">
+        <button class="quick-btn" onclick="setSellAmount(${Math.floor(pos.shares / 1e6 * 0.25 * 100) / 100})">25%</button>
+        <button class="quick-btn" onclick="setSellAmount(${Math.floor(pos.shares / 1e6 * 0.5 * 100) / 100})">50%</button>
+        <button class="quick-btn" onclick="setSellAmount(${Math.floor(pos.shares / 1e6 * 100) / 100})">Max</button>
+      </div>
+
+      <div class="route-block">
+        <div class="route-detail">
+          <div class="route-row"><span>Best Bid</span><span class="val">${bestBid ? bestBid.toFixed(1) + '¢' : '—'}</span></div>
+          <div class="route-row" style="font-weight:600;color:#111;"><span>Est. Return</span><span class="val">$${estReturn}</span></div>
+        </div>
+      </div>
+
+      <button class="submit-btn" style="background:#dc2626;" onclick="submitSellOrder()">Sell</button>
+      `;
+      })() : '<div style="text-align:center;padding:16px;color:#999;font-size:13px;">Select a position above</div>'}
+      `}
+      `}
     </div>
   `;
 }
@@ -541,6 +589,175 @@ function updateBreakdown() {
   renderKeepScroll();
 }
 
+// --- Sell panel helpers ---
+function liveBid(team, side, platform) {
+  // Use the position's platform orderbook, not the selected tab
+  const book = getBook(team, side, platform || 'pooled');
+  if (!book || !book.best_bid) return null;
+  return book.best_bid;
+}
+
+function switchPanel(tab) {
+  panelTab = tab;
+  if (tab === 'sell' && walletAddress) {
+    loadPositions();
+  }
+  selectedPosition = null;
+  sellAmount = null;
+  renderKeepScroll();
+}
+
+async function loadPositions() {
+  if (!walletAddress) return;
+  const o = event.outcomes[selectedOutcome];
+  const eventId = new URLSearchParams(location.search).get('id') || event.id;
+  try {
+    const resp = await fetch(`/api/positions?wallet=${walletAddress}&event_id=${eventId}&team=${encodeURIComponent(o.name)}`);
+    userPositions = await resp.json();
+  } catch (e) {
+    userPositions = [];
+  }
+  if (userPositions.length > 0) selectedPosition = 0;
+  renderKeepScroll();
+}
+
+function selectPosition(i) {
+  selectedPosition = i;
+  sellAmount = null;
+  renderKeepScroll();
+}
+
+function setSellAmount(v) {
+  sellAmount = v;
+  const el = document.getElementById('sellAmount');
+  if (el) el.value = v;
+  renderKeepScroll();
+}
+
+function onSellAmountInput(el) {
+  sellAmount = parseFloat(el.value) || null;
+}
+
+const POLYGON_CHAIN_ID = '0x89'; // 137
+const CTF_ADDRESS = '0x4D97DCd97eC945f40cF65F87097ACe5EA0476045';
+
+async function submitSellOrder() {
+  if (!walletAddress) { alert('Connect wallet first'); return; }
+  if (selectedPosition === null || !userPositions[selectedPosition]) { alert('Select a position'); return; }
+
+  const pos = userPositions[selectedPosition];
+  const sharesToSell = sellAmount ? Math.floor(sellAmount * 1e6) : pos.shares;
+  if (sharesToSell <= 0) { alert('Enter shares amount'); return; }
+
+  openTxModal('sell');
+  setTxStep('approving_sell');
+
+  try {
+    // Switch to Polygon
+    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    if (chainId !== POLYGON_CHAIN_ID) {
+      try {
+        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: POLYGON_CHAIN_ID }] });
+      } catch (switchErr) {
+        if (switchErr.code === 4902) {
+          await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{
+            chainId: POLYGON_CHAIN_ID, chainName: 'Polygon', nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+            rpcUrls: ['https://polygon-rpc.com'], blockExplorerUrls: ['https://polygonscan.com'],
+          }] });
+        } else { throw switchErr; }
+      }
+    }
+
+    // Fetch relayer address from config
+    const cfg = await fetch('/api/config').then(r => r.json());
+    const relayerAddr = cfg.relayer_address;
+
+    // Check if relayer is approved on CTF
+    const isApprovedData = '0xe985e9c5' +
+      walletAddress.slice(2).toLowerCase().padStart(64, '0') +
+      relayerAddr.slice(2).toLowerCase().padStart(64, '0');
+    const approvedHex = await window.ethereum.request({
+      method: 'eth_call',
+      params: [{ to: CTF_ADDRESS, data: isApprovedData }, 'latest'],
+    });
+    const isApproved = BigInt(approvedHex) > 0n;
+
+    if (!isApproved) {
+      // setApprovalForAll(relayer, true)
+      const approveData = '0xa22cb465' +
+        relayerAddr.slice(2).toLowerCase().padStart(64, '0') +
+        '0000000000000000000000000000000000000000000000000000000000000001';
+      const approveTx = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [{ from: walletAddress, to: CTF_ADDRESS, data: approveData }],
+      });
+      setTxMsg('Approving relayer on Polygon…');
+      let receipt = null;
+      while (!receipt) {
+        await new Promise(r => setTimeout(r, 2000));
+        receipt = await window.ethereum.request({ method: 'eth_getTransactionReceipt', params: [approveTx] });
+      }
+      if (receipt.status !== '0x1') { setTxFailed('approving_sell', 'Approval failed'); return; }
+      setTxScanLink('approving_sell', `https://polygonscan.com/tx/${approveTx}`);
+    }
+
+    // Call POST /api/sell
+    setTxStep('pulling');
+    setTxMsg('Sending sell request…');
+
+    const resp = await fetch('/api/sell', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order_id: pos.order_id, amount: sharesToSell }),
+    });
+    const sellOrder = await resp.json();
+
+    if (sellOrder.error) {
+      setTxFailed('pulling', sellOrder.error);
+      return;
+    }
+
+    setTxScanLink('pulling', `https://polygonscan.com/tx/${sellOrder.pull_tx}`);
+    setTxStep('selling');
+    setTxMsg('Waiting for sell execution…');
+
+    // Poll sell order status
+    let done = false;
+    while (!done) {
+      await new Promise(r => setTimeout(r, 5000));
+      const st = await fetch(`/api/order/${sellOrder.id}`).then(r => r.json());
+
+      if (st.status === 'sell_matched') {
+        setTxStep('settling_sell');
+        setTxMsg('Sell matched, waiting for USDC…');
+      } else if (st.status === 'sell_settled') {
+        setTxStep('bridging_back');
+        setTxMsg('Bridging USDC back to Base…');
+      } else if (st.status === 'bridging_back') {
+        setTxStep('bridging_back');
+        if (st.bridge_back_tx) {
+          setTxScanLink('bridging_back', `https://polygonscan.com/tx/${st.bridge_back_tx}`);
+        }
+        setTxMsg('Bridge in progress…');
+      } else if (st.status === 'completed') {
+        setTxDone('USDC delivered to your wallet on Base');
+        if (st.receiving_tx_hash) {
+          setTxScanLink('done', `https://basescan.org/tx/${st.receiving_tx_hash}`);
+        }
+        done = true;
+      } else if (st.status === 'trade_failed') {
+        setTxFailed('selling', st.trade_error || 'Sell failed');
+        done = true;
+      } else if (st.status === 'bridge_failed') {
+        setTxFailed('bridging_back', st.bridge_error || 'Bridge back failed');
+        done = true;
+      }
+    }
+  } catch (e) {
+    setTxFailed('approving_sell', e.message || String(e));
+  }
+}
+
 // --- Buy flow ---
 const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const BASE_CHAIN_ID = '0x2105'; // 8453
@@ -555,7 +772,7 @@ async function submitOrder() {
   const routerAddr = cfg.router_address;
   if (!routerAddr) { alert('Router not configured'); return; }
 
-  openTxModal();
+  openTxModal('buy');
   setTxStep('approving');
 
   try {
@@ -565,32 +782,47 @@ async function submitOrder() {
       await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
     }
 
-    // Encode approve(router, amount)
-    const approveData = '0x095ea7b3' +
-      routerAddr.slice(2).toLowerCase().padStart(64, '0') +
-      BigInt(Math.round(budget * 1e6)).toString(16).padStart(64, '0');
-
-    const approveTx = await window.ethereum.request({
-      method: 'eth_sendTransaction',
-      params: [{ from: walletAddress, to: USDC_ADDRESS, data: approveData }],
+    // Check existing allowance before approving
+    const allowanceData = '0xdd62ed3e' +
+      walletAddress.slice(2).toLowerCase().padStart(64, '0') +
+      routerAddr.slice(2).toLowerCase().padStart(64, '0');
+    const allowanceHex = await window.ethereum.request({
+      method: 'eth_call',
+      params: [{ to: USDC_ADDRESS, data: allowanceData }, 'latest'],
     });
+    const allowance = BigInt(allowanceHex);
+    const needed = BigInt(Math.round(budget * 1e6));
 
-    setTxMsg('Waiting for confirmation…');
+    let approveTx = null;
+    if (allowance >= needed) {
+      setTxStep('approved');
+      setTxMsg('USDC already approved');
+    } else {
+      const approveData = '0x095ea7b3' +
+        routerAddr.slice(2).toLowerCase().padStart(64, '0') +
+        needed.toString(16).padStart(64, '0');
 
-    // Wait for approve confirmation
-    let receipt = null;
-    while (!receipt) {
-      await new Promise(r => setTimeout(r, 2000));
-      receipt = await window.ethereum.request({
-        method: 'eth_getTransactionReceipt',
-        params: [approveTx],
+      approveTx = await window.ethereum.request({
+        method: 'eth_sendTransaction',
+        params: [{ from: walletAddress, to: USDC_ADDRESS, data: approveData }],
       });
+
+      setTxMsg('Waiting for confirmation…');
+
+      let receipt = null;
+      while (!receipt) {
+        await new Promise(r => setTimeout(r, 2000));
+        receipt = await window.ethereum.request({
+          method: 'eth_getTransactionReceipt',
+          params: [approveTx],
+        });
+      }
+
+      if (receipt.status !== '0x1') { setTxFailed('approving', 'Approve transaction reverted'); return; }
+
+      setTxStep('approved');
+      setTxScanLink('approved', `https://basescan.org/tx/${approveTx}`);
     }
-
-    if (receipt.status !== '0x1') { setTxFailed('approving', 'Approve transaction reverted'); return; }
-
-    setTxStep('approved');
-    setTxScanLink('approved', `https://basescan.org/tx/${approveTx}`);
 
     // Relay via backend
     setTxStep('relaying');
@@ -633,14 +865,16 @@ async function submitOrder() {
         }
         setTxStep('trading');
         setTxMsg('Placing orders on markets…');
+      } else if (st.status === 'matched') {
+        setTxStep('settling');
+        setTxMsg('Waiting for settlement & transferring shares…');
       } else if (st.status === 'filled') {
-        setTxDone('Orders filled successfully');
-        if (st.trade_results) {
-          // Link to Polymarket order page via order_id
-          const results = Object.values(st.trade_results);
-          const oid = results.find(r => r.order_id)?.order_id;
-          if (oid) {
-            setTxScanLink('trading', `https://polymarket.com`);
+        setTxDone('Shares delivered to your wallet');
+        if (st.transfer_results) {
+          const txs = Object.values(st.transfer_results);
+          const tx = txs.find(t => t.tx_hash);
+          if (tx) {
+            setTxScanLink('settling', `https://polygonscan.com/tx/${tx.tx_hash}`);
           }
         }
         settled = true;
