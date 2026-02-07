@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>→ Polygon USDC.e</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: #1a1a2e;
+      color: #fff;
+      min-height: 100vh;
+    }
+    .container { max-width: 420px; margin: 40px auto; padding: 24px; }
+    h1 { text-align: center; font-size: 24px; margin-bottom: 24px; }
+    .card { background: #16213e; border-radius: 16px; padding: 24px; }
+    .wallet-info { text-align: center; color: #888; margin-bottom: 20px; }
+    .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    select, input[type="number"] {
+      padding: 10px 16px; border-radius: 8px; border: none;
+      background: #0f3460; color: #fff; font-size: 16px;
+    }
+    input[type="number"] { width: 140px; text-align: right; }
+    .balance { text-align: right; color: #888; font-size: 14px; margin-bottom: 16px; }
+    .balance-low { color: #ef4444; }
+    .dest-box {
+      background: #0f3460; border-radius: 12px; padding: 16px;
+      margin-bottom: 16px; text-align: center;
+    }
+    .dest-label { font-size: 11px; color: #888; text-transform: uppercase; }
+    .dest-info { font-size: 18px; margin-top: 8px; }
+    .dest-info span { color: #4ade80; }
+    .btn {
+      width: 100%; padding: 14px 20px; border-radius: 12px; border: none;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff; font-size: 16px; font-weight: 600; cursor: pointer;
+    }
+    .btn:disabled { opacity: 0.5; cursor: default; }
+    .btn-secondary {
+      flex: 1; padding: 12px 16px; border-radius: 12px;
+      border: 1px solid #667eea; background: transparent;
+      color: #667eea; font-size: 14px; font-weight: 600;
+      cursor: pointer; margin-right: 8px;
+    }
+    .btn-row { display: flex; margin-top: 16px; }
+    .routes-header { margin-top: 20px; margin-bottom: 12px; font-size: 14px; color: #888; }
+    .route-card {
+      background: #0f3460; border-radius: 12px; padding: 14px;
+      margin-bottom: 10px; cursor: pointer; border: 1px solid #0f3460;
+    }
+    .route-card.selected { border: 2px solid #667eea; }
+    .route-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .route-left { display: flex; align-items: center; gap: 8px; }
+    .best-badge {
+      background: #4ade80; color: #000; padding: 2px 6px;
+      border-radius: 4px; font-size: 10px; font-weight: 700;
+    }
+    .tool-badge { background: #1a1a2e; padding: 4px 8px; border-radius: 6px; font-size: 12px; }
+    .route-body { display: flex; justify-content: space-between; align-items: flex-end; }
+    .route-amount { color: #4ade80; font-size: 18px; font-weight: 700; }
+    .route-amount small { color: #888; font-size: 12px; font-weight: 400; }
+    .route-meta { display: flex; gap: 12px; font-size: 12px; color: #888; }
+    .status {
+      margin-top: 16px; padding: 12px; background: #0f3460;
+      border-radius: 8px; font-size: 13px; word-break: break-all;
+    }
+    .check { color: #4ade80; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>→ Polygon USDC.e</h1>
+
+    <div id="connect-section">
+      <button class="btn" onclick="connectWallet()">Connect Wallet</button>
+    </div>
+
+    <div id="main-section" class="hidden">
+      <div class="card">
+        <p class="wallet-info" id="wallet-addr"></p>
+
+        <div class="row">
+          <label>From Chain:</label>
+          <select id="from-chain" onchange="onChainChange()">
+            <option value="eth">Ethereum</option>
+            <option value="base" selected>Base</option>
+            <option value="bsc">BNB Chain</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label>Token:</label>
+          <select id="from-token" onchange="onTokenChange()">
+            <option value="USDC">USDC</option>
+            <option value="USDT">USDT</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label>Amount:</label>
+          <input type="number" id="amount" placeholder="0.00" oninput="onAmountInput()" />
+        </div>
+
+        <p class="balance">
+          Balance: <span id="token-balance">0.00</span> <span id="token-name">USDC</span>
+          <br/>
+          <span id="native-balance-line">Gas: <span id="native-balance">0.00000000</span> <span id="native-symbol">ETH</span></span>
+        </p>
+
+        <div class="dest-box">
+          <span class="dest-label">Destination</span>
+          <div class="dest-info">Polygon → <span>USDC.e</span></div>
+        </div>
+
+        <button class="btn hidden" id="switch-btn" onclick="switchChain()">Switch Chain</button>
+
+        <div id="routes-container" class="hidden">
+          <div class="routes-header" id="routes-header"></div>
+          <div id="routes-list"></div>
+          <div class="btn-row hidden" id="action-btns">
+            <button class="btn-secondary" onclick="approveToken()">1. Approve</button>
+            <button class="btn" onclick="executeBridge()">2. Bridge</button>
+          </div>
+        </div>
+
+        <p class="status hidden" id="status"></p>
+      </div>
+    </div>
+  </div>
+
+<script>
+const CHAINS = {
+  eth:  { id: 1,    name: 'Ethereum',   hex: '0x1',    native: 'ETH' },
+  base: { id: 8453, name: 'Base',       hex: '0x2105', native: 'ETH' },
+  bsc:  { id: 56,   name: 'BNB Chain',  hex: '0x38',   native: 'BNB' }
+};
+
+const TOKENS = {
+  USDC: {
+    eth:  { address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', decimals: 6 },
+    base: { address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', decimals: 6 },
+    bsc:  { address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', decimals: 18 }
+  },
+  USDT: {
+    eth:  { address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6 },
+    base: { address: '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2', decimals: 6 },
+    bsc:  { address: '0x55d398326f99059fF775485246999027B3197955', decimals: 18 }
+  }
+};
+
+const DEST = { chainId: 137, token: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', decimals: 6 };
+const API_KEY = '92bd3007-26d1-4684-834c-f6c88241caa3.4a1062d2-3458-483d-8e5c-b493c9a5697f';
+
+const ERC20_ABI = [
+  'function balanceOf(address) view returns (uint256)',
+  'function approve(address spender, uint256 amount) returns (bool)'
+];
+
+let provider, wallet, walletChainId;
+let routes = [], selectedRoute = null;
+let debounceTimer = null;
+
+// DOM helpers
+const $ = id => document.getElementById(id);
+const show = id => $(id).classList.remove('hidden');
+const hide = id => $(id).classList.add('hidden');
+
+function setStatus(msg) {
+  if (msg) { $('status').textContent = msg; show('status'); }
+  else { hide('status'); }
+}
+
+// Connect
+async function connectWallet() {
+  if (!window.ethereum) return alert('Install MetaMask');
+  provider = new ethers.BrowserProvider(window.ethereum);
+  const signer = await provider.getSigner();
+  wallet = await signer.getAddress();
+  const net = await provider.getNetwork();
+  walletChainId = Number(net.chainId);
+
+  $('wallet-addr').textContent = wallet.slice(0,6) + '...' + wallet.slice(-4);
+  hide('connect-section');
+  show('main-section');
+  fetchBalances();
+
+  window.ethereum.on('chainChanged', c => {
+    walletChainId = Number(c);
+    provider = new ethers.BrowserProvider(window.ethereum);
+    fetchBalances();
+    checkChain();
+  });
+}
+
+// Switch chain
+async function switchChain() {
+  const chain = CHAINS[$('from-chain').value];
+  try {
+    await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: chain.hex }] });
+  } catch(e) { console.log(e); }
+}
+
+function checkChain() {
+  const chain = CHAINS[$('from-chain').value];
+  if (walletChainId !== chain.id) {
+    $('switch-btn').textContent = 'Switch to ' + chain.name;
+    show('switch-btn');
+  } else {
+    hide('switch-btn');
+  }
+}
+
+// Fetch balances
+async function fetchBalances() {
+  const chainKey = $('from-chain').value;
+  const tokenKey = $('from-token').value;
+  const chain = CHAINS[chainKey];
+  
+  $('token-name').textContent = tokenKey;
+  $('native-symbol').textContent = chain.native;
+  checkChain();
+
+  if (walletChainId !== chain.id) return;
+
+  try {
+    const tokenInfo = TOKENS[tokenKey][chainKey];
+    const contract = new ethers.Contract(tokenInfo.address, ERC20_ABI, provider);
+    const bal = await contract.balanceOf(wallet);
+    $('token-balance').textContent = parseFloat(ethers.formatUnits(bal, tokenInfo.decimals)).toFixed(2);
+
+    const nBal = await provider.getBalance(wallet);
+    const nativeVal = parseFloat(ethers.formatUnits(nBal, 18));
+    $('native-balance').textContent = nativeVal.toFixed(8);
+    $('native-balance-line').style.color = nativeVal < 0.001 ? '#ef4444' : '#888';
+  } catch(e) {
+    console.log('Balance error:', e);
+  }
+}
+
+// Events
+function onChainChange() {
+  const chain = CHAINS[$('from-chain').value];
+  switchChain();
+  fetchBalances();
+  clearRoutes();
+}
+
+function onTokenChange() {
+  fetchBalances();
+  clearRoutes();
+}
+
+function onAmountInput() {
+  clearTimeout(debounceTimer);
+  const val = $('amount').value;
+  if (!val || parseFloat(val) <= 0) { clearRoutes(); return; }
+  debounceTimer = setTimeout(searchRoutes, 1000);
+}
+
+function clearRoutes() {
+  routes = []; selectedRoute = null;
+  hide('routes-container');
+  hide('action-btns');
+  $('routes-list').innerHTML = '';
+  setStatus('');
+}
+
+// Search routes
+async function searchRoutes() {
+  const chainKey = $('from-chain').value;
+  const tokenKey = $('from-token').value;
+  const amount = $('amount').value;
+  if (!wallet || !amount || parseFloat(amount) <= 0) return;
+
+  clearRoutes();
+  setStatus('Searching best route...');
+
+  const tokenInfo = TOKENS[tokenKey][chainKey];
+  const amountWei = ethers.parseUnits(amount, tokenInfo.decimals).toString();
+  const headers = { 'x-lifi-api-key': API_KEY };
+
+  const params = new URLSearchParams({
+    fromChain: String(CHAINS[chainKey].id),
+    toChain: String(DEST.chainId),
+    fromToken: tokenInfo.address,
+    toToken: DEST.token,
+    fromAddress: wallet,
+    toAddress: wallet,
+    fromAmount: amountWei,
+    slippage: '0.03'
+  });
+
+  try {
+    // Best route
+    const resp = await fetch('https://li.quest/v1/quote?' + params, { headers });
+    const data = await resp.json();
+
+    if (!data.transactionRequest) {
+      setStatus('No routes: ' + (data.message || 'Not available'));
+      return;
+    }
+
+    routes = [data];
+    renderRoutes();
+
+    // Extra bridges
+    const extras = ['across', 'stargateV2', 'cbridge', 'squid'];
+    const results = await Promise.all(extras.map(async bridge => {
+      try {
+        await new Promise(r => setTimeout(r, 200));
+        const p = new URLSearchParams(params);
+        p.set('allowBridges', bridge);
+        const r2 = await fetch('https://li.quest/v1/quote?' + p, { headers });
+        const d = await r2.json();
+        if (d.transactionRequest && d.tool !== data.tool) return d;
+      } catch(e) {}
+      return null;
+    }));
+
+    const all = [data, ...results.filter(r => r)];
+    const seen = new Set();
+    routes = all
+      .filter(r => !seen.has(r.tool) && seen.add(r.tool))
+      .sort((a,b) => {
+        const amtA = BigInt(a.estimate?.toAmount || '0');
+        const amtB = BigInt(b.estimate?.toAmount || '0');
+        return amtB > amtA ? 1 : -1;
+      });
+
+    renderRoutes();
+    setStatus('Found ' + routes.length + ' routes');
+  } catch(e) {
+    setStatus('Error: ' + e.message);
+  }
+}
+
+// Render routes
+function renderRoutes() {
+  if (routes.length === 0) return;
+  selectedRoute = routes[0];
+  show('routes-container');
+
+  $('routes-header').textContent = routes.length + ' routes found';
+  $('routes-list').innerHTML = routes.map((r, i) => {
+    const toAmt = parseFloat(ethers.formatUnits(r.estimate?.toAmount || '0', 6)).toFixed(2);
+    const gas = parseFloat(r.estimate?.gasCosts?.[0]?.amountUSD || '0').toFixed(2);
+    const time = Math.ceil((r.estimate?.executionDuration || 60) / 60);
+    const name = r.toolDetails?.name || r.tool;
+
+    return `
+      <div class="route-card ${i === 0 ? 'selected' : ''}" id="route-${i}" onclick="selectRoute(${i})">
+        <div class="route-header">
+          <div class="route-left">
+            ${i === 0 ? '<span class="best-badge">BEST</span>' : ''}
+            <span class="tool-badge">${name}</span>
+          </div>
+          <span class="check" id="check-${i}">${i === 0 ? '✓' : ''}</span>
+        </div>
+        <div class="route-body">
+          <span class="route-amount">${toAmt} <small>USDC.e</small></span>
+          <div class="route-meta">
+            <span>⛽ $${gas}</span>
+            <span>⏱️ ~${time}m</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  checkChain();
+  if (walletChainId === CHAINS[$('from-chain').value].id) show('action-btns');
+}
+
+function selectRoute(idx) {
+  selectedRoute = routes[idx];
+  document.querySelectorAll('.route-card').forEach((el, i) => {
+    el.classList.toggle('selected', i === idx);
+    el.querySelector('.check').textContent = i === idx ? '✓' : '';
+  });
+}
+
+// Approve
+async function approveToken() {
+  if (!selectedRoute) return;
+  setStatus('Approving...');
+  try {
+    const chainKey = $('from-chain').value;
+    const tokenKey = $('from-token').value;
+    const tokenInfo = TOKENS[tokenKey][chainKey];
+    const signer = await provider.getSigner();
+    const contract = new ethers.Contract(tokenInfo.address, ERC20_ABI, signer);
+    const tx = await contract.approve(
+      selectedRoute.estimate.approvalAddress,
+      ethers.parseUnits($('amount').value, tokenInfo.decimals)
+    );
+    await tx.wait();
+    setStatus('Approved!');
+  } catch(e) {
+    setStatus('Approve failed: ' + e.message);
+  }
+}
+
+// Bridge
+async function executeBridge() {
+  if (!selectedRoute) return;
+  setStatus('Sending...');
+  try {
+    const signer = await provider.getSigner();
+    const tx = await signer.sendTransaction({
+      to: selectedRoute.transactionRequest.to,
+      data: selectedRoute.transactionRequest.data,
+      value: selectedRoute.transactionRequest.value,
+      gasLimit: selectedRoute.transactionRequest.gasLimit
+    });
+    setStatus('Tx: ' + tx.hash);
+    await tx.wait();
+    setStatus('Success! ' + tx.hash);
+  } catch(e) {
+    setStatus('Failed: ' + e.message);
+  }
+}
+</script>
+</body>
+</html>
