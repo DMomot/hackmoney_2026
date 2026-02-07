@@ -138,7 +138,7 @@ async function render() {
     }
 
     grid.innerHTML = events.map(ev => `
-      <div class="card" onclick="location.href='/market?id=${ev.id}'"
+      <div class="card" onclick="location.href='/market?id=${ev.id}'">
         <div class="card-top">
           <div class="card-icon">${ev.icon}</div>
           <div class="card-title">${ev.title}</div>
