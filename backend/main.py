@@ -4,6 +4,7 @@ import logging
 import math
 import os
 import sys
+import time
 import uuid
 from datetime import datetime, timezone
 from dotenv import load_dotenv
@@ -17,7 +18,7 @@ from utils.utils import build_pooled, find_optimal_route
 import httpx
 import requests as req_lib
 
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 logger = logging.getLogger(__name__)
 
 
@@ -33,6 +34,12 @@ USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 LIFI_DIAMOND = "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE"
 
 USDC_POLYGON = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"  # USDC.e on Polygon
+USDT_BSC = "0x55d398326f99059fF775485246999027B3197955"  # USDT on BSC
+
+# Platform chain mapping
+PLATFORM_CHAIN = {"polymarket": 137, "opinion": 56}
+PLATFORM_STABLE = {"polymarket": USDC_POLYGON, "opinion": USDT_BSC}
+PLATFORM_DECIMALS = {"polymarket": 6, "opinion": 18}
 
 # --- Polymarket trading adapter (relayer uses OWNER key) ---
 POLYGON_RPC = "https://polygon-bor-rpc.publicnode.com"
@@ -70,6 +77,52 @@ def _get_poly_adapter():
         _poly_adapter.authenticate()
         logger.info(f"Polymarket adapter ready, relayer: {relayer_addr}")
     return _poly_adapter
+
+# --- Opinion trading adapter ---
+_opinion_adapter = None
+
+def _get_opinion_adapter():
+    global _opinion_adapter
+    if _opinion_adapter is not None:
+        return _opinion_adapter
+    opinion_key = os.getenv("OPINION_PRIVATE_KEY", "")
+    opinion_wallet = os.getenv("OPINION_WALLET_ADDRESS", "")
+    if not opinion_key or not opinion_wallet:
+        return None
+    import importlib.util, types
+    relayer_dir = os.path.join(os.path.dirname(__file__), '..', 'relayer', 'adapters')
+    # Ensure package registered
+    if "relayer_adapters" not in sys.modules:
+        spec_b = importlib.util.spec_from_file_location("relayer_adapters.base", os.path.join(relayer_dir, "base.py"))
+        base_mod = importlib.util.module_from_spec(spec_b)
+        spec_b.loader.exec_module(base_mod)
+        pkg = types.ModuleType("relayer_adapters")
+        pkg.__path__ = [relayer_dir]
+        sys.modules["relayer_adapters"] = pkg
+        sys.modules["relayer_adapters.base"] = base_mod
+    # Load opinion module
+    spec_o = importlib.util.spec_from_file_location("relayer_adapters.opinion", os.path.join(relayer_dir, "opinion.py"),
+                                                     submodule_search_locations=[])
+    op_mod = importlib.util.module_from_spec(spec_o)
+    op_mod.__package__ = "relayer_adapters"
+    sys.modules["relayer_adapters.opinion"] = op_mod
+    spec_o.loader.exec_module(op_mod)
+    _opinion_adapter = op_mod.OpinionAdapter(
+        private_key=opinion_key,
+        smart_wallet=opinion_wallet,
+        main_relayer_key=RELAYER_KEY,
+    )
+    _opinion_adapter.authenticate()
+    logger.info(f"Opinion adapter ready, wallet: {opinion_wallet}")
+    return _opinion_adapter
+
+def _get_adapter(platform: str):
+    """Get adapter by platform name."""
+    if platform == "polymarket":
+        return _get_poly_adapter()
+    elif platform == "opinion":
+        return _get_opinion_adapter()
+    return None
 
 ROUTER_ABI = json.loads('[{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"address","name":"from","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"address","name":"lifiDiamond","type":"address"},{"internalType":"bytes","name":"lifiData","type":"bytes"},{"internalType":"bytes","name":"metadata","type":"bytes"}],"name":"bridgeViaLiFi","outputs":[],"stateMutability":"nonpayable","type":"function"}]')
 
@@ -277,20 +330,33 @@ async def create_order(body: dict = Body(...)):
             _save_orders(orders)
             return order
 
-        # Get LiFi quote: Base USDC → Polygon USDC.e (to relayer wallet)
-        relayer_addr = Account.from_key(RELAYER_KEY).address if RELAYER_KEY else user_addr
-        lifi_resp = req_lib.get("https://li.quest/v1/quote", params={
+        # Detect target chain from platforms in route
+        primary_platform = next(iter(platforms), "polymarket")
+        to_chain = PLATFORM_CHAIN.get(primary_platform, 137)
+        to_token = PLATFORM_STABLE.get(primary_platform, USDC_POLYGON)
+
+        # Determine bridge recipient
+        if primary_platform == "opinion":
+            to_address = os.getenv("OPINION_WALLET_ADDRESS", "")
+        else:
+            to_address = Account.from_key(RELAYER_KEY).address if RELAYER_KEY else user_addr
+
+        lifi_params = {
             "fromChain": 8453,
-            "toChain": 137,
+            "toChain": to_chain,
             "fromToken": USDC_BASE,
-            "toToken": USDC_POLYGON,
+            "toToken": to_token,
             "fromAmount": str(amount_raw),
             "fromAddress": router_addr,
-            "toAddress": relayer_addr,
+            "toAddress": Web3.to_checksum_address(to_address),
             "slippage": "0.05",
             "integrator": "premarket-router",
-        }, timeout=15)
+        }
+        logger.info(f"LiFi quote params: {lifi_params}")
+        lifi_resp = req_lib.get("https://li.quest/v1/quote", params=lifi_params, timeout=15)
         lifi_quote = lifi_resp.json()
+        if "transactionRequest" not in lifi_quote:
+            raise Exception(f"LiFi quote error: {json.dumps(lifi_quote)[:500]}")
         lifi_data = lifi_quote["transactionRequest"]["data"]
 
         metadata = Web3.to_bytes(text=json.dumps({
@@ -359,28 +425,28 @@ async def get_positions(wallet: str = Query(...), event_id: str = Query(None), t
             continue
         if team and o.get("team") != team:
             continue
-        # Get shares info
-        poly = o.get("platforms", {}).get("polymarket", {})
-        transfer = o.get("transfer_results", {}).get("polymarket", {})
-        shares = transfer.get("amount", 0)
-        if shares <= 0:
-            continue
         # Detect which platform the position is on
         platform = None
         for pname in o.get("platforms", {}):
             if o["platforms"][pname].get("token_id"):
                 platform = pname
                 break
+        platform = platform or "polymarket"
+        pdata = o.get("platforms", {}).get(platform, {})
+        transfer = o.get("transfer_results", {}).get(platform, {})
+        shares = transfer.get("amount", 0)
+        if shares <= 0:
+            continue
         positions.append({
             "order_id": o["id"],
             "event_id": o.get("event_id"),
             "team": o.get("team"),
             "side": o.get("side"),
-            "platform": platform or "polymarket",
-            "token_id": poly.get("token_id"),
-            "market_id": poly.get("market_id"),
+            "platform": platform,
+            "token_id": pdata.get("token_id"),
+            "market_id": pdata.get("market_id"),
             "shares": shares,
-            "buy_price": o.get("trade_results", {}).get("polymarket", {}).get("order_params", {}).get("price", 0),
+            "buy_price": o.get("trade_results", {}).get(platform, {}).get("price", 0),
             "budget": o.get("budget", 0),
         })
     return positions
@@ -402,16 +468,23 @@ async def create_sell(body: dict = Body(...)):
         return {"error": f"buy order not filled, status={buy_order['status']}"}
 
     user_wallet = buy_order["wallet"]
-    # Get token_id / market_id from the buy order
-    poly_data = buy_order.get("platforms", {}).get("polymarket", {})
-    token_id = poly_data.get("token_id")
-    market_id = poly_data.get("market_id")
-    if not token_id:
-        return {"error": "no polymarket token_id in buy order"}
 
-    adapter = _get_poly_adapter()
+    # Detect platform from buy order
+    platform = None
+    token_id = None
+    market_id = None
+    for pname, pdata in buy_order.get("platforms", {}).items():
+        if pdata.get("token_id"):
+            platform = pname
+            token_id = pdata["token_id"]
+            market_id = pdata.get("market_id")
+            break
+    if not platform or not token_id:
+        return {"error": "no token_id found in buy order"}
+
+    adapter = _get_adapter(platform)
     if not adapter:
-        return {"error": "polymarket adapter not configured"}
+        return {"error": f"{platform} adapter not configured"}
 
     # Check user has shares
     user_shares = adapter.get_user_shares_balance(token_id, user_wallet)
@@ -421,22 +494,31 @@ async def create_sell(body: dict = Body(...)):
     shares_to_sell = sell_amount if sell_amount else user_shares
 
     # Check relayer approved by user on CTF
-    relayer_addr = Account.from_key(RELAYER_KEY).address
-    approved = adapter.check_erc1155_approval(user_wallet, relayer_addr)
+    chain_id = PLATFORM_CHAIN.get(platform, 137)
+    if platform == "opinion":
+        operator = adapter._main_relayer_address
+    else:
+        operator = Account.from_key(RELAYER_KEY).address
+    approved = adapter.check_erc1155_approval(user_wallet, operator)
     if not approved:
         return {
             "error": "relayer not approved",
             "action": "setApprovalForAll",
-            "ctf_address": adapter.CTF_ADDRESS,
-            "operator": relayer_addr,
-            "chain_id": 137,
+            "ctf_address": adapter.CONDITIONAL_TOKENS if hasattr(adapter, 'CONDITIONAL_TOKENS') else adapter.CTF_ADDRESS,
+            "operator": operator,
+            "chain_id": chain_id,
         }
 
-    # Pull shares from user to relayer
+    # Pull shares from user to relayer/smart wallet
     sell_id = str(uuid.uuid4())[:8]
     try:
         pull_tx = adapter.transfer_erc1155_from_user(user_wallet, token_id, shares_to_sell)
-        logger.info(f"Sell {sell_id}: pulled {shares_to_sell} shares, tx={pull_tx}")
+        logger.info(f"Sell {sell_id}: pulled {shares_to_sell} shares on {platform}, tx={pull_tx}")
+        # Wait for confirmation
+        chain_rpc = {137: POLYGON_RPC, 56: "https://bsc-dataseed.binance.org"}.get(chain_id, POLYGON_RPC)
+        _w3 = Web3(Web3.HTTPProvider(chain_rpc))
+        _w3.eth.wait_for_transaction_receipt(pull_tx, timeout=30)
+        logger.info(f"Sell {sell_id}: pull tx confirmed")
     except Exception as e:
         return {"error": f"failed to pull shares: {e}"}
 
@@ -448,7 +530,7 @@ async def create_sell(body: dict = Body(...)):
         "event_id": buy_order.get("event_id"),
         "team": buy_order.get("team"),
         "side": buy_order.get("side"),
-        "platforms": {"polymarket": {"token_id": token_id, "market_id": market_id}},
+        "platforms": {platform: {"token_id": token_id, "market_id": market_id}},
         "shares_amount": shares_to_sell,
         "pull_tx": pull_tx,
         "status": "shares_pulled",
@@ -489,7 +571,6 @@ def _execute_trades(order: dict) -> dict:
                 relayer_addr = Account.from_key(RELAYER_KEY).address
                 actual_balance = _usdc.functions.balanceOf(relayer_addr).call() / 1e6
                 # Floor to 2 decimals (USDC cents)
-                import math
                 actual_spent = math.floor(min(spent, actual_balance) * 100) / 100
                 if actual_spent < 1.0:
                     results[pname] = {"error": f"insufficient USDC.e: {actual_balance:.4f}, min $1"}
@@ -519,8 +600,41 @@ def _execute_trades(order: dict) -> dict:
             except Exception as e:
                 logger.error(f"Order {order['id']}: {pname} trade failed: {e}")
                 results[pname] = {"error": str(e)}
+        elif pname == "opinion":
+            adapter = _get_opinion_adapter()
+            if not adapter:
+                results[pname] = {"error": "adapter not configured"}
+                continue
+            try:
+                # Check actual USDT balance on smart wallet (18 decimals)
+                actual_balance = adapter.get_usdt_balance() / 1e18
+                actual_spent = math.floor(min(spent, actual_balance) * 100) / 100
+                if actual_spent < 1.0:
+                    results[pname] = {"error": f"insufficient USDT: {actual_balance:.4f}, min $1"}
+                    continue
+                logger.info(f"Order {order['id']}: budget={spent}, actual USDT={actual_balance:.4f}, using={actual_spent:.2f}")
+                best = adapter.get_best_offer(token_id, "BUY")
+                price = best["price"]
+                if price <= 0:
+                    results[pname] = {"error": "no asks available"}
+                    continue
+                # Opinion BUY: amount = USDT to spend (makerAmountInQuoteToken)
+                resp = adapter.place_order(
+                    token_id=token_id,
+                    market_id=int(market_id) if market_id else 0,
+                    amount=actual_spent, price=price, side="BUY",
+                )
+                results[pname] = {
+                    "order_id": resp.get("orderId"),
+                    "status": resp.get("status"),
+                    "price": price,
+                    "amount": actual_spent,
+                }
+                logger.info(f"Order {order['id']}: {pname} placed, status={resp.get('status')}")
+            except Exception as e:
+                logger.error(f"Order {order['id']}: {pname} trade failed: {e}")
+                results[pname] = {"error": str(e)}
         else:
-            # TODO: limitless, opinion adapters
             results[pname] = {"error": "adapter not implemented"}
 
     return results
@@ -528,7 +642,6 @@ def _execute_trades(order: dict) -> dict:
 
 def _settle_and_transfer(order: dict) -> dict:
     """Check if shares settled on relayer, transfer to user. 5 retries, 5s apart."""
-    import time
     trade_results = order.get("trade_results", {})
     user_wallet = order.get("wallet")
     if not user_wallet:
@@ -567,6 +680,23 @@ def _settle_and_transfer(order: dict) -> dict:
             else:
                 logger.warning(f"Order {order['id']}: {pname} settlement not received after 5 retries")
 
+        elif pname == "opinion":
+            adapter = _get_opinion_adapter()
+            if not adapter:
+                continue
+            for attempt in range(5):
+                balance = adapter.get_shares_balance(token_id)
+                if balance > 0:
+                    tx_hash = adapter.transfer_erc1155_to_user(user_wallet, token_id, balance)
+                    transfers[pname] = {"tx_hash": tx_hash, "success": True, "amount": balance}
+                    logger.info(f"Order {order['id']}: opinion transferred {balance} shares, attempt {attempt+1}")
+                    break
+                logger.info(f"Order {order['id']}: opinion settlement pending, attempt {attempt+1}/5")
+                if attempt < 4:
+                    time.sleep(5)
+            else:
+                logger.warning(f"Order {order['id']}: opinion settlement not received after 5 retries")
+
     all_ok = all(t.get("success") for t in transfers.values()) and len(transfers) > 0
     return {"done": all_ok, "transfers": transfers}
 
@@ -574,35 +704,36 @@ def _settle_and_transfer(order: dict) -> dict:
 # ---- Sell flow helpers ----
 
 def _execute_sell(order: dict) -> dict:
-    """Sell shares on Polymarket CLOB. Returns trade results."""
-    token_id = order["platforms"]["polymarket"]["token_id"]
-    market_id = order["platforms"]["polymarket"].get("market_id")
+    """Sell shares on platform CLOB. Returns trade results."""
+    # Detect platform
+    platform = next(iter(order.get("platforms", {})), "polymarket")
+    pdata = order["platforms"][platform]
+    token_id = pdata["token_id"]
+    market_id = pdata.get("market_id")
     shares = order["shares_amount"]
+    decimals = PLATFORM_DECIMALS.get(platform, 6)
 
-    adapter = _get_poly_adapter()
+    adapter = _get_adapter(platform)
     if not adapter:
-        return {"error": "adapter not configured"}
+        return {"error": f"{platform} adapter not configured"}
 
     try:
-        # Get best bid price
         best = adapter.get_best_offer(token_id, "SELL")
         price = best["price"]
         if price <= 0:
             return {"error": "no bids available"}
 
-        # shares amount in human-readable (6 dec -> float)
-        amount = math.floor((shares / 1e6) * 100) / 100
+        # Convert raw shares to human-readable
+        amount = math.floor((shares / (10 ** decimals)) * 100) / 100
         if amount < 1.0:
             return {"error": f"shares too small to sell: {amount}"}
 
         resp = adapter.place_order(
             token_id=token_id,
             market_id=int(market_id) if market_id else 0,
-            amount=amount,
-            price=price,
-            side="SELL",
+            amount=amount, price=price, side="SELL",
         )
-        logger.info(f"Sell {order['id']}: placed SELL, status={resp.get('status')}")
+        logger.info(f"Sell {order['id']}: placed SELL on {platform}, status={resp.get('status')}")
         return {
             "order_id": resp.get("orderID") or resp.get("orderId"),
             "status": resp.get("status"),
@@ -611,69 +742,89 @@ def _execute_sell(order: dict) -> dict:
             "order_params": resp.get("_params", {}),
         }
     except Exception as e:
-        logger.error(f"Sell {order['id']}: SELL failed: {e}")
+        logger.error(f"Sell {order['id']}: SELL failed on {platform}: {e}")
         return {"error": str(e)}
 
 
 def _settle_sell(order: dict) -> dict:
-    """Wait for USDC.e to appear on relayer after sell settlement. 5 retries, 5s apart."""
-    import time
-    adapter = _get_poly_adapter()
+    """Wait for stablecoin to appear on relayer after sell settlement. 5 retries, 5s apart."""
+    platform = next(iter(order.get("platforms", {})), "polymarket")
+    adapter = _get_adapter(platform)
     if not adapter:
         return {"done": False}
 
-    # Record initial USDC.e balance before waiting
-    initial_balance = adapter.get_usdc_balance()
-    expected_usdc = order.get("trade_results", {}).get("polymarket", {}).get("price", 0) * \
-                    order.get("trade_results", {}).get("polymarket", {}).get("amount", 0)
-    expected_raw = int(expected_usdc * 1e6) if expected_usdc > 0 else 0
+    decimals = PLATFORM_DECIMALS.get(platform, 6)
+    # Get balance check method
+    get_bal = adapter.get_usdt_balance if platform == "opinion" else adapter.get_usdc_balance
+
+    initial_balance = get_bal()
+    trade = order.get("trade_results", {}).get(platform, {})
+    expected = trade.get("price", 0) * trade.get("amount", 0)
+    expected_raw = int(expected * (10 ** decimals)) if expected > 0 else 0
 
     for attempt in range(5):
-        balance = adapter.get_usdc_balance()
-        # Settlement arrived if balance increased
+        balance = get_bal()
         if balance > initial_balance or balance >= expected_raw:
-            logger.info(f"Sell {order['id']}: USDC.e settled, balance={balance / 1e6:.4f}")
-            return {"done": True, "usdc_balance": balance}
-        logger.info(f"Sell {order['id']}: waiting for USDC.e settlement, attempt {attempt+1}/5, balance={balance / 1e6:.4f}")
+            proceeds = balance - initial_balance
+            logger.info(f"Sell {order['id']}: settled on {platform}, proceeds={proceeds / (10 ** decimals):.4f}")
+            return {"done": True, "usdc_balance": balance, "initial_balance": initial_balance, "proceeds": proceeds}
+        logger.info(f"Sell {order['id']}: waiting for settlement on {platform}, attempt {attempt+1}/5")
         if attempt < 4:
             time.sleep(5)
 
-    # Even if didn't detect increase, check if there's usable balance
-    final = adapter.get_usdc_balance()
+    final = get_bal()
     if final > 0:
-        logger.info(f"Sell {order['id']}: proceeding with balance={final / 1e6:.4f}")
-        return {"done": True, "usdc_balance": final}
+        proceeds = final - initial_balance
+        return {"done": True, "usdc_balance": final, "initial_balance": initial_balance, "proceeds": proceeds}
     return {"done": False}
 
 
 def _bridge_back(order: dict) -> dict:
-    """Bridge USDC.e from Polygon back to Base via LiFi. Relayer sends tx on Polygon."""
-    adapter = _get_poly_adapter()
+    """Bridge stablecoin back to Base via LiFi. Relayer sends tx on source chain."""
+    platform = next(iter(order.get("platforms", {})), "polymarket")
+    adapter = _get_adapter(platform)
     if not adapter:
-        return {"error": "adapter not configured"}
+        return {"error": f"{platform} adapter not configured"}
 
     user_wallet = order["wallet"]
-    usdc_balance = adapter.get_usdc_balance()
-    if usdc_balance <= 0:
-        return {"error": "no USDC.e to bridge"}
-
-    # Floor to cents
-    amount_raw = int(math.floor(usdc_balance / 1e4) * 1e4)  # floor to 2 USDC decimals
-    if amount_raw < 1_000_000:  # < $1
-        return {"error": f"USDC.e too small to bridge: {amount_raw / 1e6:.4f}"}
-
-    relayer_addr = Account.from_key(RELAYER_KEY).address
     user_addr = Web3.to_checksum_address(user_wallet)
+    decimals = PLATFORM_DECIMALS.get(platform, 6)
+    from_chain = PLATFORM_CHAIN.get(platform, 137)
+    from_token = PLATFORM_STABLE.get(platform, USDC_POLYGON)
+
+    # Use only sell proceeds, not full wallet balance
+    settle = order.get("settle_results", {})
+    proceeds = settle.get("proceeds", 0)
+    if proceeds <= 0:
+        return {"error": "no sell proceeds to bridge"}
+
+    # For Opinion: transfer only proceeds from smart wallet to main relayer
+    if platform == "opinion":
+        adapter.transfer_usdt_to_user(adapter._main_relayer_address, proceeds)
+        time.sleep(3)
+        from_address = adapter._main_relayer_address
+        bridge_key = RELAYER_KEY
+        balance = proceeds
+    else:
+        balance = proceeds
+        from_address = Account.from_key(RELAYER_KEY).address
+        bridge_key = RELAYER_KEY
+
+    # Floor to 2 decimal places
+    floor_factor = 10 ** (decimals - 2)
+    amount_raw = int(math.floor(balance / floor_factor) * floor_factor)
+    min_amount = 10 ** decimals  # $1
+    if amount_raw < min_amount:
+        return {"error": f"amount too small to bridge: {amount_raw / (10 ** decimals):.4f}"}
 
     try:
-        # Get LiFi quote: Polygon USDC.e -> Base USDC
         lifi_resp = req_lib.get("https://li.quest/v1/quote", params={
-            "fromChain": 137,
+            "fromChain": from_chain,
             "toChain": 8453,
-            "fromToken": USDC_POLYGON,
+            "fromToken": from_token,
             "toToken": USDC_BASE,
             "fromAmount": str(amount_raw),
-            "fromAddress": relayer_addr,
+            "fromAddress": from_address,
             "toAddress": user_addr,
             "slippage": "0.05",
             "integrator": "premarket-router",
@@ -683,55 +834,50 @@ def _bridge_back(order: dict) -> dict:
             return {"error": f"LiFi quote failed: {lifi_quote}"}
 
         tx_req = lifi_quote["transactionRequest"]
-        lifi_to = Web3.to_checksum_address(tx_req["to"])  # LiFi diamond on Polygon
+        lifi_to = Web3.to_checksum_address(tx_req["to"])
         lifi_data = tx_req["data"]
         lifi_value = int(tx_req.get("value", "0"), 16) if isinstance(tx_req.get("value"), str) else int(tx_req.get("value", 0))
 
-        # w3 for Polygon
+        # Connect to source chain
         from web3 import Web3 as W3
-        from web3.middleware import ExtraDataToPOAMiddleware
-        w3_poly = W3(W3.HTTPProvider(POLYGON_RPC))
-        w3_poly.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+        rpc_map = {137: POLYGON_RPC, 56: "https://bsc-dataseed.binance.org"}
+        w3_src = W3(W3.HTTPProvider(rpc_map.get(from_chain, POLYGON_RPC)))
+        if from_chain == 137:
+            from web3.middleware import ExtraDataToPOAMiddleware
+            w3_src.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
 
-        # Approve LiFi diamond to spend USDC.e
-        usdc_abi = [{"inputs": [{"name": "spender", "type": "address"}, {"name": "amount", "type": "uint256"}],
-                     "name": "approve", "outputs": [{"type": "bool"}], "type": "function"}]
-        usdc = w3_poly.eth.contract(address=W3.to_checksum_address(USDC_POLYGON), abi=usdc_abi)
-        gas_price = w3_poly.eth.gas_price
-        approve_tx = usdc.functions.approve(lifi_to, amount_raw).build_transaction({
-            "from": relayer_addr,
-            "nonce": w3_poly.eth.get_transaction_count(relayer_addr, "pending"),
+        # Approve LiFi diamond
+        approve_abi = [{"inputs": [{"name": "spender", "type": "address"}, {"name": "amount", "type": "uint256"}],
+                        "name": "approve", "outputs": [{"type": "bool"}], "type": "function"}]
+        token_contract = w3_src.eth.contract(address=W3.to_checksum_address(from_token), abi=approve_abi)
+        gas_price = w3_src.eth.gas_price
+        approve_tx = token_contract.functions.approve(lifi_to, amount_raw).build_transaction({
+            "from": from_address,
+            "nonce": w3_src.eth.get_transaction_count(from_address, "pending"),
             "gas": 80000,
-            "maxFeePerGas": int(gas_price * 1.3),
-            "maxPriorityFeePerGas": min(int(gas_price * 0.3), int(30e9)),
-            "chainId": 137,
+            "gasPrice": int(gas_price * 1.3),
+            "chainId": from_chain,
         })
-        signed_approve = w3_poly.eth.account.sign_transaction(approve_tx, RELAYER_KEY)
-        w3_poly.eth.send_raw_transaction(signed_approve.raw_transaction)
-        w3_poly.eth.wait_for_transaction_receipt(signed_approve.hash, timeout=60)
-        logger.info(f"Sell {order['id']}: approved LiFi for {amount_raw / 1e6:.4f} USDC.e")
+        signed_approve = w3_src.eth.account.sign_transaction(approve_tx, bridge_key)
+        w3_src.eth.send_raw_transaction(signed_approve.raw_transaction)
+        w3_src.eth.wait_for_transaction_receipt(signed_approve.hash, timeout=60)
+        logger.info(f"Sell {order['id']}: approved LiFi on chain {from_chain}")
 
-        # Send the bridge tx on Polygon
+        # Send bridge tx
         bridge_tx = {
-            "from": relayer_addr,
-            "to": lifi_to,
-            "data": lifi_data,
-            "value": lifi_value,
-            "nonce": w3_poly.eth.get_transaction_count(relayer_addr, "pending"),
-            "gas": 500000,
-            "maxFeePerGas": int(gas_price * 1.5),
-            "maxPriorityFeePerGas": min(int(gas_price * 0.5), int(50e9)),
-            "chainId": 137,
+            "from": from_address, "to": lifi_to, "data": lifi_data, "value": lifi_value,
+            "nonce": w3_src.eth.get_transaction_count(from_address, "pending"),
+            "gas": 500000, "gasPrice": int(gas_price * 1.5), "chainId": from_chain,
         }
-        signed_bridge = w3_poly.eth.account.sign_transaction(bridge_tx, RELAYER_KEY)
-        bridge_hash = w3_poly.eth.send_raw_transaction(signed_bridge.raw_transaction)
-        receipt = w3_poly.eth.wait_for_transaction_receipt(bridge_hash, timeout=120)
+        signed_bridge = w3_src.eth.account.sign_transaction(bridge_tx, bridge_key)
+        bridge_hash = w3_src.eth.send_raw_transaction(signed_bridge.raw_transaction)
+        receipt = w3_src.eth.wait_for_transaction_receipt(bridge_hash, timeout=120)
         h = "0x" + bridge_hash.hex() if not bridge_hash.hex().startswith("0x") else bridge_hash.hex()
 
         if receipt["status"] != 1:
             return {"error": f"bridge tx reverted: {h}"}
 
-        logger.info(f"Sell {order['id']}: bridge tx sent, hash={h}")
+        logger.info(f"Sell {order['id']}: bridge tx sent on chain {from_chain}, hash={h}")
         return {"bridge_tx": h, "amount": amount_raw}
 
     except Exception as e:
@@ -800,11 +946,12 @@ async def poll_orders():
                     logger.error(f"Order {o['id']}: settlement check error: {e}")
 
             # === SELL FLOW ===
-            # Sell step 1: shares_pulled -> sell on Polymarket
+            # Sell step 1: shares_pulled -> sell on platform
             elif o["status"] == "shares_pulled" and o.get("direction") == "sell":
                 try:
+                    sell_platform = next(iter(o.get("platforms", {})), "polymarket")
                     result = await asyncio.to_thread(_execute_sell, o)
-                    o["trade_results"] = {"polymarket": result}
+                    o["trade_results"] = {sell_platform: result}
                     if "error" in result:
                         o["status"] = "trade_failed"
                         o["trade_error"] = result["error"]

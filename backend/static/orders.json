@@ -880,5 +880,187 @@
     "bridge_back_amount": 1840000,
     "receiving_tx_hash": "0x18631bea084a2f0eaedd508b5b881b10339746ae6640d18c1d6707d7fed8b01d",
     "receiving_chain_id": 8453
+  },
+  {
+    "id": "08219993",
+    "wallet": "0x1ED167f87F77Ee1059A7bF2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "per_platform": {
+        "opinion": {
+          "market_id": 1354,
+          "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+          "spent": 2.0,
+          "qty": 12.82
+        }
+      }
+    },
+    "platforms": {
+      "opinion": {
+        "market_id": "1354",
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "spent": 2.0,
+        "qty": 12.82
+      }
+    },
+    "status": "failed",
+    "approve_tx_hash": "0xb4d155dfd2906247ebcab54b75660cb67ec1f30343be231aafb645107f29f2a8",
+    "tx_hash": null,
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-07T22:22:05.970339+00:00",
+    "error": "'transactionRequest'"
+  },
+  {
+    "id": "98563f57",
+    "wallet": "0x1ED167f87F77Ee1059A7bF2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "per_platform": {
+        "opinion": {
+          "market_id": 1354,
+          "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+          "spent": 2.0,
+          "qty": 12.82
+        }
+      }
+    },
+    "platforms": {
+      "opinion": {
+        "market_id": "1354",
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "spent": 2.0,
+        "qty": 12.82
+      }
+    },
+    "status": "failed",
+    "approve_tx_hash": "0xb4d155dfd2906247ebcab54b75660cb67ec1f30343be231aafb645107f29f2a8",
+    "tx_hash": null,
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-07T22:23:15.012237+00:00",
+    "error": "LiFi quote error: {\"message\": \"/toAddress Invalid address\", \"code\": 1011}"
+  },
+  {
+    "id": "3b274705",
+    "wallet": "0x1ED167f87F77Ee1059A7bF2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "per_platform": {
+        "opinion": {
+          "market_id": 1354,
+          "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+          "spent": 2.0,
+          "qty": 12.82
+        }
+      }
+    },
+    "platforms": {
+      "opinion": {
+        "market_id": "1354",
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "spent": 2.0,
+        "qty": 12.82
+      }
+    },
+    "status": "failed",
+    "approve_tx_hash": "0xb4d155dfd2906247ebcab54b75660cb67ec1f30343be231aafb645107f29f2a8",
+    "tx_hash": null,
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-07T22:24:02.559817+00:00",
+    "error": "Unknown format '', attempted to normalize to '0x'"
+  },
+  {
+    "id": "68a02541",
+    "wallet": "0x1ED167f87F77Ee1059A7bF2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "per_platform": {
+        "opinion": {
+          "market_id": 1354,
+          "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+          "spent": 2.0,
+          "qty": 12.82
+        }
+      }
+    },
+    "platforms": {
+      "opinion": {
+        "market_id": "1354",
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "spent": 2.0,
+        "qty": 12.82
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": "0xb4d155dfd2906247ebcab54b75660cb67ec1f30343be231aafb645107f29f2a8",
+    "tx_hash": "0xf96006f499ed50dea5aee40e92eb13571fa28b5c4aba6ab1ed8cae453f178521",
+    "receiving_tx_hash": "0x2df59961e1224580556d91bfdca5badf2165e2baa45a98b11b72311bf08ac52b",
+    "receiving_chain_id": 56,
+    "created_at": "2026-02-07T22:24:32.397515+00:00",
+    "trade_results": {
+      "opinion": {
+        "order_id": "36cb475e-0474-11f1-bddf-0a58a9feac02",
+        "status": "NEW",
+        "price": 0.156,
+        "amount": 2.0
+      }
+    },
+    "transfer_results": {
+      "opinion": {
+        "tx_hash": "0x38ce72250a3304353103eb46289519e0eaffc082abaac114b20f7aca9ecfdef0",
+        "success": true,
+        "amount": 9615258517949532266
+      }
+    }
+  },
+  {
+    "id": "8194d35e",
+    "direction": "sell",
+    "buy_order_id": "68a02541",
+    "wallet": "0x1ED167f87F77Ee1059A7bF2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "platforms": {
+      "opinion": {
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "market_id": "1354"
+      }
+    },
+    "shares_amount": 10232877565568579882,
+    "pull_tx": "0xadeb6794357cdf4083c0d0cd0253982b340c9de9479de4d02f30395fba40505b",
+    "status": "completed",
+    "created_at": "2026-02-07T22:29:59.341083+00:00",
+    "trade_results": {
+      "opinion": {
+        "order_id": "c1e74870-0474-11f1-a486-0a58a9feac02",
+        "status": "NEW",
+        "price": 0.155,
+        "amount": 10.23,
+        "order_params": {}
+      }
+    },
+    "settle_results": {
+      "done": true,
+      "usdc_balance": 3543368722575241976
+    },
+    "bridge_back_tx": "0x3721cb07e9d553a4ecf5e4d60ff4b0c2866cb5830d7019f6f79d7dffed77f30f",
+    "bridge_back_amount": 3540000000000000000,
+    "receiving_tx_hash": "0x009ebbfc9f69996333677dd82081d79b08bfebf0f4c19fd60dc11eb5df13c57f",
+    "receiving_chain_id": 8453
   }
 ]
