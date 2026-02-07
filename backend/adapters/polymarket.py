@@ -28,6 +28,7 @@ async def get_orderbook(event_id: str, team: str, side: str = "yes") -> dict:
     team_data = event["teams"].get(team)
     if not team_data:
         return {"error": f"Team {team} not found in {event_id}"}
+    market_id = team_data.get("market_id")
     token_id = team_data.get(side)
     if not token_id:
         return {"error": f"Side {side} not found for {team}"}
@@ -44,6 +45,8 @@ async def get_orderbook(event_id: str, team: str, side: str = "yes") -> dict:
 
     return {
         "platform": "polymarket",
+        "market_id": market_id,
+        "token_id": token_id,
         "team": team, "side": side,
         "asks": asks, "bids": bids,
         "best_ask": asks[0]["price_cents"] if asks else 0,

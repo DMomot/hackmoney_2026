@@ -58,6 +58,7 @@ async def get_orderbook(event_id: str, team: str, side: str = "yes") -> dict:
 
     return {
         "platform": "limitless",
+        "market_id": slug,
         "team": team, "side": side,
         "asks": asks, "bids": bids,
         "best_ask": asks[0]["price_cents"] if asks else 0,

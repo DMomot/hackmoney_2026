@@ -184,6 +184,19 @@ async def route(
 async def create_order(body: dict = Body(...)):
     """Create order, relay transferERC20 on-chain, return tx_hash."""
     order_id = str(uuid.uuid4())[:8]
+    route = body.get("route", {})
+    # Extract per-platform token_id / market_id from route
+    platforms = {}
+    for pname, pdata in route.get("per_platform", {}).items():
+        entry = {}
+        if "market_id" in pdata:
+            entry["market_id"] = str(pdata["market_id"])
+        if "token_id" in pdata:
+            entry["token_id"] = str(pdata["token_id"])
+        entry["spent"] = pdata.get("spent", 0)
+        entry["qty"] = pdata.get("qty", 0)
+        platforms[pname] = entry
+
     order = {
         "id": order_id,
         "wallet": body["wallet"],
@@ -191,7 +204,8 @@ async def create_order(body: dict = Body(...)):
         "team": body["team"],
         "side": body["side"],
         "budget": body["budget"],
-        "route": body.get("route", {}),
+        "route": route,
+        "platforms": platforms,
         "status": "pending",
         "approve_tx_hash": body.get("approve_tx_hash"),
         "tx_hash": None,

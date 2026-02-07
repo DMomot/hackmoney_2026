@@ -59,8 +59,17 @@ def find_optimal_route(
     # Collect tagged levels
     side_key = "asks" if direction == "buy" else "bids"
     levels = []
+    # Map platform -> token_id, market_id
+    platform_ids = {}
     for book in full_books:
         platform = book["platform"]
+        ids = {}
+        if "market_id" in book and book["market_id"] is not None:
+            ids["market_id"] = book["market_id"]
+        if "token_id" in book and book["token_id"] is not None:
+            ids["token_id"] = book["token_id"]
+        if ids:
+            platform_ids[platform] = ids
         for lv in book.get(side_key, []):
             levels.append({
                 "platform": platform,
@@ -143,7 +152,7 @@ def find_optimal_route(
     total_qty = sum(v["qty"] for v in per_platform.values())
     avg_price = total_spent / total_qty if total_qty > 0 else 0
 
-    # Round and add per-platform avg price
+    # Round and add per-platform avg price + ids
     for p in per_platform:
         s = per_platform[p]["spent"]
         q = per_platform[p]["qty"]
@@ -152,6 +161,8 @@ def find_optimal_route(
         per_platform[p]["qty"] = round(q, 4)
         per_platform[p]["avg_price"] = round(pp_avg, 6)
         per_platform[p]["avg_price_cents"] = round(pp_avg * 100, 2)
+        if p in platform_ids:
+            per_platform[p].update(platform_ids[p])
 
     return {
         "direction": direction,
