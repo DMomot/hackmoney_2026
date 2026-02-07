@@ -5,12 +5,272 @@
     "icon": "⚽",
     "date": "Dec 31, 2026",
     "outcomes": [
-      { "name": "Spain", "pct": 16, "yesPrice": 15.2, "noPrice": 84.5 },
-      { "name": "England", "pct": 13, "yesPrice": 13.1, "noPrice": 86.5 }
+      {
+        "name": "Spain",
+        "pct": 16,
+        "yesPrice": 15.6,
+        "noPrice": 84.5
+      },
+      {
+        "name": "England",
+        "pct": 14,
+        "yesPrice": 14.0,
+        "noPrice": 85.3
+      },
+      {
+        "name": "France",
+        "pct": 13,
+        "yesPrice": 13.0,
+        "noPrice": 86.9
+      },
+      {
+        "name": "Argentina",
+        "pct": 11,
+        "yesPrice": 11.0,
+        "noPrice": 89.0
+      },
+      {
+        "name": "Brazil",
+        "pct": 10,
+        "yesPrice": 10.0,
+        "noPrice": 89.7
+      },
+      {
+        "name": "Portugal",
+        "pct": 7,
+        "yesPrice": 7.1,
+        "noPrice": 91.6
+      },
+      {
+        "name": "Germany",
+        "pct": 6,
+        "yesPrice": 6.0,
+        "noPrice": 92.8
+      },
+      {
+        "name": "Netherlands",
+        "pct": 3,
+        "yesPrice": 2.8,
+        "noPrice": 95.6
+      },
+      {
+        "name": "Norway",
+        "pct": 3,
+        "yesPrice": 2.6,
+        "noPrice": 96.4
+      },
+      {
+        "name": "Italy",
+        "pct": 2,
+        "yesPrice": 1.9,
+        "noPrice": 96.7
+      },
+      {
+        "name": "USA",
+        "pct": 2,
+        "yesPrice": 1.6,
+        "noPrice": 98.5
+      },
+      {
+        "name": "Belgium",
+        "pct": 2,
+        "yesPrice": 1.8,
+        "noPrice": 98.3
+      },
+      {
+        "name": "Colombia",
+        "pct": 2,
+        "yesPrice": 1.7,
+        "noPrice": 98.4
+      },
+      {
+        "name": "Morocco",
+        "pct": 2,
+        "yesPrice": 1.7,
+        "noPrice": 98.4
+      },
+      {
+        "name": "Croatia",
+        "pct": 1,
+        "yesPrice": 1.1,
+        "noPrice": 99.0
+      },
+      {
+        "name": "Uruguay",
+        "pct": 1,
+        "yesPrice": 1.1,
+        "noPrice": 99.0
+      },
+      {
+        "name": "Japan",
+        "pct": 1,
+        "yesPrice": 1.3,
+        "noPrice": 98.8
+      },
+      {
+        "name": "Mexico",
+        "pct": 1,
+        "yesPrice": 1.2,
+        "noPrice": 98.9
+      },
+      {
+        "name": "South Korea",
+        "pct": 1,
+        "yesPrice": 0.8,
+        "noPrice": 99.4
+      },
+      {
+        "name": "Switzerland",
+        "pct": 1,
+        "yesPrice": 0.9,
+        "noPrice": 99.2
+      },
+      {
+        "name": "Austria",
+        "pct": 1,
+        "yesPrice": 0.7,
+        "noPrice": 99.4
+      },
+      {
+        "name": "Ecuador",
+        "pct": 1,
+        "yesPrice": 0.8,
+        "noPrice": 99.2
+      },
+      {
+        "name": "Peru",
+        "pct": 1,
+        "yesPrice": 1.0,
+        "noPrice": 99.0
+      },
+      {
+        "name": "Senegal",
+        "pct": 1,
+        "yesPrice": 0.8,
+        "noPrice": 99.3
+      },
+      {
+        "name": "Ivory Coast",
+        "pct": 1,
+        "yesPrice": 0.6,
+        "noPrice": 99.6
+      },
+      {
+        "name": "Canada",
+        "pct": 0,
+        "yesPrice": 0.5,
+        "noPrice": 99.6
+      },
+      {
+        "name": "Australia",
+        "pct": 0,
+        "yesPrice": 0.3,
+        "noPrice": 99.8
+      },
+      {
+        "name": "Qatar",
+        "pct": 0,
+        "yesPrice": 0.3,
+        "noPrice": 99.8
+      },
+      {
+        "name": "Saudi Arabia",
+        "pct": 0,
+        "yesPrice": 0.3,
+        "noPrice": 99.8
+      },
+      {
+        "name": "Iran",
+        "pct": 0,
+        "yesPrice": 0.3,
+        "noPrice": 99.8
+      },
+      {
+        "name": "Scotland",
+        "pct": 0,
+        "yesPrice": 0.4,
+        "noPrice": 99.7
+      },
+      {
+        "name": "Paraguay",
+        "pct": 0,
+        "yesPrice": 0.4,
+        "noPrice": 99.7
+      },
+      {
+        "name": "Tunisia",
+        "pct": 0,
+        "yesPrice": 0.3,
+        "noPrice": 99.8
+      },
+      {
+        "name": "South Africa",
+        "pct": 0,
+        "yesPrice": 0.2,
+        "noPrice": 99.9
+      },
+      {
+        "name": "Egypt",
+        "pct": 0,
+        "yesPrice": 0.4,
+        "noPrice": 99.7
+      },
+      {
+        "name": "Algeria",
+        "pct": 0,
+        "yesPrice": 0.3,
+        "noPrice": 99.8
+      },
+      {
+        "name": "Ghana",
+        "pct": 0,
+        "yesPrice": 0.3,
+        "noPrice": 99.8
+      },
+      {
+        "name": "Jordan",
+        "pct": 0,
+        "yesPrice": 0.2,
+        "noPrice": 99.9
+      },
+      {
+        "name": "New Zealand",
+        "pct": 0,
+        "yesPrice": 0.2,
+        "noPrice": 99.9
+      },
+      {
+        "name": "Uzbekistan",
+        "pct": 0,
+        "yesPrice": 0.3,
+        "noPrice": 99.8
+      },
+      {
+        "name": "Haiti",
+        "pct": 0,
+        "yesPrice": 0.2,
+        "noPrice": 99.9
+      },
+      {
+        "name": "Cape Verde",
+        "pct": 0,
+        "yesPrice": 0.2,
+        "noPrice": 99.9
+      },
+      {
+        "name": "Curaçao",
+        "pct": 0,
+        "yesPrice": 0.2,
+        "noPrice": 99.9
+      }
     ],
     "volume": "$492.4M",
     "txs": "1.6M tx",
-    "platforms": ["polymarket", "opinion", "limitless"]
+    "platforms": [
+      "polymarket",
+      "opinion",
+      "limitless"
+    ]
   },
   {
     "id": "nba-champion-2026",
@@ -18,12 +278,26 @@
     "icon": "🏀",
     "date": "Jun 30, 2026",
     "outcomes": [
-      { "name": "Oklahoma City", "pct": 39, "yesPrice": 39.0, "noPrice": 61.0 },
-      { "name": "Denver Nuggets", "pct": 12, "yesPrice": 12.0, "noPrice": 88.0 }
+      {
+        "name": "Oklahoma City",
+        "pct": 39,
+        "yesPrice": 39.0,
+        "noPrice": 61.0
+      },
+      {
+        "name": "Denver Nuggets",
+        "pct": 12,
+        "yesPrice": 12.0,
+        "noPrice": 88.0
+      }
     ],
     "volume": "$474.1M",
     "txs": "3.1M tx",
-    "platforms": ["polymarket", "opinion", "limitless"]
+    "platforms": [
+      "polymarket",
+      "opinion",
+      "limitless"
+    ]
   },
   {
     "id": "epl-winner-2026",
@@ -31,12 +305,26 @@
     "icon": "⚽",
     "date": "May 25, 2026",
     "outcomes": [
-      { "name": "Arsenal", "pct": 81, "yesPrice": 81.0, "noPrice": 19.0 },
-      { "name": "Man City", "pct": 15, "yesPrice": 15.0, "noPrice": 85.0 }
+      {
+        "name": "Arsenal",
+        "pct": 81,
+        "yesPrice": 81.0,
+        "noPrice": 19.0
+      },
+      {
+        "name": "Man City",
+        "pct": 15,
+        "yesPrice": 15.0,
+        "noPrice": 85.0
+      }
     ],
     "volume": "$413.6M",
     "txs": "1.7M tx",
-    "platforms": ["polymarket", "opinion", "limitless"]
+    "platforms": [
+      "polymarket",
+      "opinion",
+      "limitless"
+    ]
   },
   {
     "id": "ucl-winner-2026",
@@ -44,11 +332,25 @@
     "icon": "🏆",
     "date": "May 30, 2026",
     "outcomes": [
-      { "name": "Real Madrid", "pct": 22, "yesPrice": 22.0, "noPrice": 78.0 },
-      { "name": "Barcelona", "pct": 18, "yesPrice": 18.0, "noPrice": 82.0 }
+      {
+        "name": "Real Madrid",
+        "pct": 22,
+        "yesPrice": 22.0,
+        "noPrice": 78.0
+      },
+      {
+        "name": "Barcelona",
+        "pct": 18,
+        "yesPrice": 18.0,
+        "noPrice": 82.0
+      }
     ],
     "volume": "$320.5M",
     "txs": "1.2M tx",
-    "platforms": ["polymarket", "opinion", "limitless"]
+    "platforms": [
+      "polymarket",
+      "opinion",
+      "limitless"
+    ]
   }
 ]

@@ -1,16 +1,20 @@
 import httpx
 import json
+import os
 from pathlib import Path
 
-CLOB_URL = "https://clob.polymarket.com"
-TOKENS_PATH = Path(__file__).parent.parent / "static" / "polymarket_tokens.json"
+API_URL = "https://openapi.opinion.trade/openapi"
+TOKENS_PATH = Path(__file__).parent.parent / "static" / "opinion_tokens.json"
 
 def _load_tokens():
     with open(TOKENS_PATH) as f:
         return json.load(f)
 
+def _api_key():
+    return os.getenv("OPINION_API_KEY", "")
+
 async def get_orderbook(event_id: str, team: str, side: str = "yes") -> dict:
-    """Fetch orderbook from Polymarket CLOB for a specific team/outcome."""
+    """Fetch orderbook from Opinion CLOB for a specific team/outcome."""
     tokens = _load_tokens()
     event = tokens.get(event_id)
     if not event:
@@ -24,19 +28,21 @@ async def get_orderbook(event_id: str, team: str, side: str = "yes") -> dict:
     if not token_id:
         return {"error": f"Side {side} not found for {team}"}
 
+    headers = {"apikey": _api_key()}
+
     async with httpx.AsyncClient(timeout=10) as client:
-        resp = await client.get(f"{CLOB_URL}/book", params={"token_id": token_id})
+        resp = await client.get(f"{API_URL}/token/orderbook", params={"token_id": token_id}, headers=headers)
         data = resp.json()
 
-    raw_bids = [{"price": float(b["price"]), "size": float(b["size"])} for b in data.get("bids", [])]
-    raw_asks = [{"price": float(a["price"]), "size": float(a["size"])} for a in data.get("asks", [])]
+    result = data.get("result", {})
+    raw_bids = [{"price": float(b["price"]), "size": float(b["size"])} for b in result.get("bids", [])]
+    raw_asks = [{"price": float(a["price"]), "size": float(a["size"])} for a in result.get("asks", [])]
 
-    # 5 lowest asks (closest to spread), reversed for display (high->low)
+    # 5 lowest asks, reversed for display
     asks = sorted(raw_asks, key=lambda x: x["price"])[:5][::-1]
-    # 5 highest bids (closest to spread), high->low
+    # 5 highest bids
     bids = sorted(raw_bids, key=lambda x: x["price"], reverse=True)[:5]
 
-    # Add total (price * size) to each level
     for level in asks + bids:
         level["total"] = round(level["price"] * level["size"], 2)
         level["price_cents"] = round(level["price"] * 100, 1)
@@ -45,7 +51,7 @@ async def get_orderbook(event_id: str, team: str, side: str = "yes") -> dict:
     best_bid = bids[0]["price"] if bids else 0
 
     return {
-        "platform": "polymarket",
+        "platform": "opinion",
         "event": event["event_title"],
         "team": team,
         "side": side,

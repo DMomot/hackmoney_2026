@@ -183,11 +183,29 @@
     .submit-btn:disabled { opacity: .5; cursor: default; }
 
     .loading { text-align: center; padding: 60px; color: #999; }
+
+    .top-bar {
+      background: #fff; border-bottom: 1px solid #e5e5e5;
+      padding: 12px 32px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .top-bar .logo { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; text-decoration: none; color: #1a1a1a; }
+    .top-bar .logo span { color: #6366f1; }
+    .connect-btn {
+      padding: 10px 20px; border-radius: 10px; border: none;
+      background: #6366f1; color: #fff; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: background .15s;
+    }
+    .connect-btn:hover { background: #4f46e5; }
+    .connect-btn.connected { background: #16a34a; }
+    .connect-btn.connected:hover { background: #15803d; }
   </style>
 </head>
 <body>
 
-<a href="/" class="back">&#8592; Back to Markets</a>
+<div class="top-bar">
+  <a href="/" class="logo"><span>Predict</span> Aggregator</a>
+  <button class="connect-btn" id="walletBtn" onclick="connectWallet()">Connect Wallet</button>
+</div>
 
 <div class="layout" id="layout">
   <div class="loading" style="grid-column:1/-1;">Loading...</div>
@@ -200,34 +218,53 @@ const PLATFORMS = {
   limitless:  { name: 'Limitless',  logo: '/public/limitless.svg' },
 };
 
-// Mock order book
-function generateBook(yesPrice) {
-  const base = yesPrice / 100;
-  const asks = [];
-  const bids = [];
-  for (let i = 0; i < 4; i++) {
-    const p = (base + 0.001 * (3 - i));
-    asks.push({ price: (p * 100).toFixed(1), contracts: (Math.random() * 30000 + 5000).toFixed(2), total: (p * (Math.random() * 30000 + 5000)).toFixed(2) });
+// Orderbook cache: books[team][side] = { pooled, polymarket, limitless, opinion }
+let books = {};
+
+async function fetchAllBooks(team) {
+  try {
+    const eventId = new URLSearchParams(location.search).get('id') || event.id;
+    const resp = await fetch(`/api/orderbook/all?event_id=${eventId}&team=${encodeURIComponent(team)}`);
+    const data = await resp.json();
+    books[team] = {};
+    for (const side of ['yes', 'no']) {
+      books[team][side] = {
+        pooled: data[side]?.pooled || { bids: [], asks: [] },
+        ...(data[side]?.platforms || {}),
+      };
+    }
+  } catch (e) {
+    books[team] = {};
   }
-  for (let i = 0; i < 4; i++) {
-    const p = (base - 0.001 * i);
-    bids.push({ price: (p * 100).toFixed(1), contracts: (Math.random() * 30000 + 3000).toFixed(2), total: (p * (Math.random() * 30000 + 3000)).toFixed(2) });
-  }
-  return { asks, bids, last: yesPrice.toFixed(1) };
+  return books[team];
 }
+
+function getBook(team, side, tab) {
+  return books[team]?.[side]?.[tab] || null;
+}
+
 
 let selectedOutcome = 0;
 let selectedSide = 'yes';
+let selectedTab = 'pooled'; // which platform tab is active
 let event = null;
+
+// Per-team platform availability: { "Spain": ["polymarket","limitless","opinion"], ... }
+let teamPlatforms = {};
 
 async function init() {
   const id = new URLSearchParams(location.search).get('id');
-  const resp = await fetch('/static/events.json');
-  const events = await resp.json();
+  const [evResp, plResp] = await Promise.all([
+    fetch('/static/events.json'),
+    fetch(`/api/event-platforms?event_id=${id}`),
+  ]);
+  const events = await evResp.json();
   event = events.find(e => e.id === id) || events[0];
+  teamPlatforms = await plResp.json();
 
   document.title = event.title;
   render();
+  loadBooks(event.outcomes[0].name);
 }
 
 function platformIcons(platforms) {
@@ -237,8 +274,20 @@ function platformIcons(platforms) {
   }).join('');
 }
 
+// Get live best_ask for yes/no from current tab's book
+function livePrice(team, side) {
+  const book = getBook(team, side, selectedTab);
+  if (!book || !book.best_ask) return null;
+  return book.best_ask;
+}
+
 function render() {
   const o = event.outcomes[selectedOutcome];
+  // Fallback tab if selected platform not available for this outcome
+  const available = teamPlatforms[o.name] || [];
+  if (selectedTab !== 'pooled' && !available.includes(selectedTab)) {
+    selectedTab = 'pooled';
+  }
 
   document.getElementById('layout').innerHTML = `
     <div class="left">
@@ -270,50 +319,52 @@ function render() {
           <tbody>
             ${event.outcomes.map((oc, i) => {
               const isSelected = i === selectedOutcome;
-              const ocBook = generateBook(oc.yesPrice);
+              const fb = getBook(oc.name, selectedSide, selectedTab);
               return `
               <tr class="${isSelected ? 'outcome-active' : ''}" style="cursor:pointer" onclick="selectOutcome(${i},'${selectedSide}')">
                 <td>
                   <div class="outcome-cell">
                     <span>${oc.name}</span>
-                    <div class="platform-icons">${platformIcons(event.platforms)}</div>
+                    <div class="platform-icons">${platformIcons(teamPlatforms[oc.name] || [])}</div>
                   </div>
                 </td>
-                <td class="pct-cell">${oc.pct}%</td>
+                <td class="pct-cell">${(livePrice(oc.name, 'yes') || oc.yesPrice).toFixed(1)}%</td>
                 <td style="text-align:center">
-                  <button class="buy-btn buy-yes" onclick="event.stopPropagation();selectOutcome(${i},'yes')">Buy Yes ${oc.yesPrice.toFixed(1)}&#162;</button>
+                  <button class="buy-btn buy-yes" onclick="event.stopPropagation();selectOutcome(${i},'yes')">Buy Yes<br>${(livePrice(oc.name, 'yes') || oc.yesPrice).toFixed(1)}&#162;</button>
                 </td>
                 <td style="text-align:center">
-                  <button class="buy-btn buy-no" onclick="event.stopPropagation();selectOutcome(${i},'no')">Buy No ${oc.noPrice.toFixed(1)}&#162;</button>
+                  <button class="buy-btn buy-no" onclick="event.stopPropagation();selectOutcome(${i},'no')">Buy No<br>${(livePrice(oc.name, 'no') || oc.noPrice).toFixed(1)}&#162;</button>
                 </td>
               </tr>
               ${isSelected ? `
               <tr><td colspan="4" style="padding:0; border-top:none;">
                 <div class="book-inline">
                   <div class="tabs">
-                    <button class="tab active">Trade Yes</button>
-                    <button class="tab">Trade No</button>
+                    <button class="tab ${selectedSide==='yes'?'active':''}" onclick="switchSideTab('yes')">Trade Yes</button>
+                    <button class="tab ${selectedSide==='no'?'active':''}" onclick="switchSideTab('no')">Trade No</button>
                     <div class="tabs-right">
-                      <button class="tab">Pooled</button>
-                      ${event.platforms.map(p => `<button class="tab">${PLATFORMS[p].name}</button>`).join('')}
+                      <button class="tab ${selectedTab==='pooled'?'active':''}" onclick="switchPlatform('pooled')">Pooled</button>
+                      ${(teamPlatforms[oc.name] || []).map(p => `<button class="tab ${selectedTab===p?'active':''}" onclick="switchPlatform('${p}')">${PLATFORMS[p].name}</button>`).join('')}
                     </div>
                   </div>
+                  ${!fb ? '<div style="text-align:center;padding:20px;color:#999;">Loading orderbook...</div>' :
+                  fb.asks.length === 0 && fb.bids.length === 0 ? '<div style="text-align:center;padding:20px;color:#999;">No orders</div>' : `
                   <table class="book-table">
-                    <thead><tr><th>Price</th><th>Contracts</th><th>Total</th></tr></thead>
+                    <thead><tr><th>Price</th><th>Size</th><th>Total</th></tr></thead>
                     <tbody>
-                      ${ocBook.asks.map(a => `
-                        <tr><td class="price-ask">${a.price}&#162;</td><td>${a.contracts}</td><td>$${a.total}</td></tr>
+                      ${fb.asks.map(a => `
+                        <tr><td class="price-ask">${a.price_cents}&#162;</td><td>${a.size.toLocaleString()}</td><td>$${a.total.toLocaleString()}</td></tr>
                       `).join('')}
                     </tbody>
                   </table>
-                  <div class="book-divider">Trade Yes &nbsp; Last ${ocBook.last}&#162; <span>&#10003;</span></div>
+                  <div class="book-divider">Best Ask ${fb.best_ask}&#162; / Best Bid ${fb.best_bid}&#162;</div>
                   <table class="book-table">
                     <tbody>
-                      ${ocBook.bids.map(b => `
-                        <tr><td class="price-bid">${b.price}&#162;</td><td>${b.contracts}</td><td>$${b.total}</td></tr>
+                      ${fb.bids.map(b => `
+                        <tr><td class="price-bid">${b.price_cents}&#162;</td><td>${b.size.toLocaleString()}</td><td>$${b.total.toLocaleString()}</td></tr>
                       `).join('')}
                     </tbody>
-                  </table>
+                  </table>`}
                 </div>
               </td></tr>` : ''}`;
             }).join('')}
@@ -338,11 +389,11 @@ function render() {
       <div class="market-prices">
         <div class="market-price yes ${selectedSide === 'yes' ? 'active' : ''}" onclick="selectSide('yes')">
           <div class="label">Yes</div>
-          <div class="val">${o.yesPrice.toFixed(1)}&#162;</div>
+          <div class="val">${(livePrice(o.name, 'yes') || o.yesPrice).toFixed(1)}&#162;</div>
         </div>
         <div class="market-price no ${selectedSide === 'no' ? 'active' : ''}" onclick="selectSide('no')">
           <div class="label">No</div>
-          <div class="val">${o.noPrice.toFixed(1)}&#162;</div>
+          <div class="val">${(livePrice(o.name, 'no') || o.noPrice).toFixed(1)}&#162;</div>
         </div>
       </div>
 
@@ -358,7 +409,7 @@ function render() {
       </div>
 
       <div class="breakdown">
-        ${event.platforms.map(p => `
+        ${(teamPlatforms[o.name] || []).map(p => `
           <div class="breakdown-row">
             <span>Amount to ${PLATFORMS[p].name}</span>
             <span class="val">$0.00</span>
@@ -376,15 +427,43 @@ function render() {
   `;
 }
 
+async function loadBooks(team) {
+  await fetchAllBooks(team);
+  renderKeepScroll();
+}
+
 function selectOutcome(i, side) {
   selectedOutcome = i;
   selectedSide = side;
+  const scrollY = window.scrollY;
   render();
+  window.scrollTo(0, scrollY);
+  // Scroll selected row into view if needed
+  const activeRow = document.querySelector('.outcome-active');
+  if (activeRow) activeRow.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  const team = event.outcomes[i].name;
+  if (!books[team]) loadBooks(team);
 }
 
 function selectSide(side) {
   selectedSide = side;
+  renderKeepScroll();
+}
+
+function switchSideTab(side) {
+  selectedSide = side;
+  renderKeepScroll();
+}
+
+function switchPlatform(platform) {
+  selectedTab = platform;
+  renderKeepScroll();
+}
+
+function renderKeepScroll() {
+  const y = window.scrollY;
   render();
+  window.scrollTo(0, y);
 }
 
 function setAmount(v) {
@@ -392,6 +471,61 @@ function setAmount(v) {
 }
 
 init();
+
+// Wallet connection
+let walletAddress = null;
+
+function shortAddr(addr) {
+  return addr.slice(0, 6) + '...' + addr.slice(-4);
+}
+
+function updateWalletBtn() {
+  const btn = document.getElementById('walletBtn');
+  if (walletAddress) {
+    btn.textContent = shortAddr(walletAddress);
+    btn.classList.add('connected');
+  } else {
+    btn.textContent = 'Connect Wallet';
+    btn.classList.remove('connected');
+  }
+}
+
+async function connectWallet() {
+  if (walletAddress) {
+    walletAddress = null;
+    localStorage.removeItem('walletAddress');
+    updateWalletBtn();
+    return;
+  }
+  if (!window.ethereum) {
+    alert('No wallet found. Install MetaMask or another wallet.');
+    return;
+  }
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    walletAddress = accounts[0];
+    localStorage.setItem('walletAddress', walletAddress);
+    updateWalletBtn();
+  } catch (e) {
+    console.error('Wallet connect failed:', e);
+  }
+}
+
+(function restoreWallet() {
+  const saved = localStorage.getItem('walletAddress');
+  if (saved) {
+    walletAddress = saved;
+    updateWalletBtn();
+  }
+  if (window.ethereum) {
+    window.ethereum.on('accountsChanged', (accounts) => {
+      walletAddress = accounts[0] || null;
+      if (walletAddress) localStorage.setItem('walletAddress', walletAddress);
+      else localStorage.removeItem('walletAddress');
+      updateWalletBtn();
+    });
+  }
+})();
 </script>
 </body>
 </html>

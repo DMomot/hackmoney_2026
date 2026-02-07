@@ -1,0 +1,33 @@
+{
+  "fifa-world-cup-2026": {
+    "event_title": "2026 FIFA World Cup Winner",
+    "group_slug": "2026-fifa-world-cup-winner-1765296582257",
+    "teams": {
+      "Spain": "spain-1765296582267",
+      "France": "france-1765296582288",
+      "England": "england-1765296582293",
+      "Portugal": "portugal-1765296582301",
+      "Argentina": "argentina-1765296582307",
+      "Brazil": "brazil-1765296582312",
+      "Germany": "germany-1765296582317",
+      "Norway": "norway-1765296582321",
+      "Netherlands": "netherlands-1765296582325",
+      "Morocco": "morocco-1765296582329",
+      "Italy": "italy-1765296582334",
+      "Colombia": "colombia-1765296582339",
+      "Japan": "japan-1765296582343",
+      "Belgium": "belgium-1765296582349",
+      "USA": "usa-1765296582353",
+      "Uruguay": "uruguay-1765296582358",
+      "Mexico": "mexico-1765296582361",
+      "Croatia": "croatia-1765296582365",
+      "Switzerland": "switzerland-1765296582368",
+      "South Korea": "south-korea-1765296582373",
+      "Ecuador": "ecuador-1765296582376",
+      "Canada": "canada-1765296582381",
+      "Senegal": "senegal-1765296582385",
+      "Austria": "austria-1765296582390",
+      "Other": "other-1765296582394"
+    }
+  }
+}
