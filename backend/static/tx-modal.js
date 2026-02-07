@@ -1,7 +1,7 @@
 // Transaction status modal
-// Steps: approving → approved → relaying → sent → bridging → done / failed
+// Steps: approving → approved → relaying → sent → bridging → trading → done / failed
 
-const TX_STEPS = ['approving','approved','relaying','sent','bridging','done'];
+const TX_STEPS = ['approving','approved','relaying','sent','bridging','trading','done'];
 
 const TX_LABELS = {
   approving: 'Approving USDC…',
@@ -9,12 +9,13 @@ const TX_LABELS = {
   relaying:  'Relaying to Router…',
   sent:      'Transaction Sent',
   bridging:  'Bridging via LiFi…',
+  trading:   'Placing Orders…',
   done:      'Complete',
   failed:    'Failed',
 };
 
 // Which steps can have scan links
-const SCAN_STEPS = ['approved','sent','done'];
+const SCAN_STEPS = ['approved','sent','bridging','trading','done'];
 
 let _modalEl = null;
 let _stepLinks = {}; // step -> { url, label }

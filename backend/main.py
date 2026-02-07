@@ -1,6 +1,8 @@
 import asyncio
 import json
+import logging
 import os
+import sys
 import uuid
 from datetime import datetime, timezone
 from dotenv import load_dotenv
@@ -14,6 +16,8 @@ from utils.utils import build_pooled, find_optimal_route
 import httpx
 
 load_dotenv()
+logger = logging.getLogger(__name__)
+
 
 app = FastAPI()
 
@@ -27,6 +31,43 @@ USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 LIFI_DIAMOND = "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE"
 
 USDC_POLYGON = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"  # USDC.e on Polygon
+
+# --- Polymarket trading adapter (relayer) ---
+POLYGON_RPC = "https://polygon-bor-rpc.publicnode.com"
+USER_KEY = os.getenv("USER_PRIVATE_KEY", "")
+_poly_adapter = None
+
+def _get_poly_adapter():
+    global _poly_adapter
+    if _poly_adapter is None and USER_KEY:
+        import importlib.util, types
+        relayer_dir = os.path.join(os.path.dirname(__file__), '..', 'relayer', 'adapters')
+        # Load base module
+        spec_b = importlib.util.spec_from_file_location("relayer_adapters.base", os.path.join(relayer_dir, "base.py"))
+        base_mod = importlib.util.module_from_spec(spec_b)
+        spec_b.loader.exec_module(base_mod)
+        # Register as package so relative import works
+        pkg = types.ModuleType("relayer_adapters")
+        pkg.__path__ = [relayer_dir]
+        sys.modules["relayer_adapters"] = pkg
+        sys.modules["relayer_adapters.base"] = base_mod
+        # Load polymarket module
+        spec_p = importlib.util.spec_from_file_location("relayer_adapters.polymarket", os.path.join(relayer_dir, "polymarket.py"),
+                                                         submodule_search_locations=[])
+        poly_mod = importlib.util.module_from_spec(spec_p)
+        poly_mod.__package__ = "relayer_adapters"
+        sys.modules["relayer_adapters.polymarket"] = poly_mod
+        spec_p.loader.exec_module(poly_mod)
+        PolyTrade = poly_mod.PolymarketAdapter
+        user_addr = Account.from_key(USER_KEY).address
+        _poly_adapter = PolyTrade(
+            private_key=USER_KEY,
+            proxy_wallet=user_addr,
+            rpc_url=POLYGON_RPC,
+        )
+        _poly_adapter.authenticate()
+        logger.info(f"Polymarket adapter ready, wallet: {user_addr}")
+    return _poly_adapter
 
 ROUTER_ABI = json.loads('[{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"address","name":"from","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"address","name":"lifiDiamond","type":"address"},{"internalType":"bytes","name":"lifiData","type":"bytes"},{"internalType":"bytes","name":"metadata","type":"bytes"}],"name":"bridgeViaLiFi","outputs":[],"stateMutability":"nonpayable","type":"function"}]')
 
@@ -285,37 +326,108 @@ async def get_order(order_id: str):
     return {"error": "not found"}
 
 
-# ---- LiFi Status Poller ----
+# ---- LiFi Status Poller + Trade Executor ----
+
+def _execute_trades(order: dict) -> dict:
+    """Place orders on prediction markets for a bridged order."""
+    platforms = order.get("platforms", {})
+    side_map = {"yes": "BUY", "no": "BUY"}  # buying outcome tokens
+    results = {}
+
+    for pname, pdata in platforms.items():
+        token_id = pdata.get("token_id")
+        market_id = pdata.get("market_id")
+        spent = pdata.get("spent", 0)
+        if not token_id or spent <= 0:
+            continue
+
+        if pname == "polymarket":
+            adapter = _get_poly_adapter()
+            if not adapter:
+                results[pname] = {"error": "adapter not configured"}
+                continue
+            try:
+                # Get best ask price for this token
+                best = adapter.get_best_offer(token_id, "BUY")
+                price = best["price"]
+                if price <= 0:
+                    results[pname] = {"error": "no asks available"}
+                    continue
+                # amount = shares to buy; spent = USDC budget for this platform
+                amount = spent / price
+                resp = adapter.place_order(
+                    token_id=token_id,
+                    market_id=int(market_id) if market_id else 0,
+                    amount=amount,
+                    price=price,
+                    side="BUY",
+                )
+                results[pname] = {
+                    "order_id": resp.get("orderID") or resp.get("orderId"),
+                    "status": resp.get("status"),
+                    "price": price,
+                    "amount": amount,
+                    "spent": spent,
+                }
+                logger.info(f"Order {order['id']}: {pname} placed, status={resp.get('status')}")
+            except Exception as e:
+                logger.error(f"Order {order['id']}: {pname} trade failed: {e}")
+                results[pname] = {"error": str(e)}
+        else:
+            # TODO: limitless, opinion adapters
+            results[pname] = {"error": "adapter not implemented"}
+
+    return results
+
 
 async def poll_orders():
-    """Background task: poll LiFi status for sent orders."""
+    """Background task: poll LiFi status for sent orders, execute trades for bridged."""
     while True:
         await asyncio.sleep(10)
         orders = _load_orders()
         changed = False
+
         for o in orders:
-            if o["status"] != "sent" or not o.get("tx_hash"):
-                continue
-            try:
-                async with httpx.AsyncClient() as client:
-                    resp = await client.get(
-                        "https://li.quest/v1/status",
-                        params={"txHash": o["tx_hash"]},
-                        timeout=10,
-                    )
-                    data = resp.json()
-                    lifi_status = data.get("status", "")
-                    if lifi_status == "DONE":
-                        o["status"] = "filled"
-                        recv = data.get("receiving", {})
-                        o["receiving_tx_hash"] = recv.get("txHash")
-                        o["receiving_chain_id"] = recv.get("chainId")
-                        changed = True
-                    elif lifi_status == "FAILED":
-                        o["status"] = "failed"
-                        changed = True
-            except Exception:
-                pass
+            # Step 1: Poll LiFi for sent orders
+            if o["status"] == "sent" and o.get("tx_hash"):
+                try:
+                    async with httpx.AsyncClient() as client:
+                        resp = await client.get(
+                            "https://li.quest/v1/status",
+                            params={"txHash": o["tx_hash"]},
+                            timeout=10,
+                        )
+                        data = resp.json()
+                        lifi_status = data.get("status", "")
+                        if lifi_status == "DONE":
+                            o["status"] = "bridged"
+                            recv = data.get("receiving", {})
+                            o["receiving_tx_hash"] = recv.get("txHash")
+                            o["receiving_chain_id"] = recv.get("chainId")
+                            changed = True
+                            logger.info(f"Order {o['id']}: bridge done")
+                        elif lifi_status == "FAILED":
+                            o["status"] = "failed"
+                            changed = True
+                except Exception:
+                    pass
+
+            # Step 2: Execute trades for bridged orders
+            elif o["status"] == "bridged":
+                try:
+                    results = await asyncio.to_thread(_execute_trades, o)
+                    o["trade_results"] = results
+                    # Check if all trades succeeded
+                    all_ok = all("error" not in v for v in results.values()) and len(results) > 0
+                    o["status"] = "filled" if all_ok else "trade_failed"
+                    changed = True
+                    logger.info(f"Order {o['id']}: trades {'done' if all_ok else 'failed'}")
+                except Exception as e:
+                    logger.error(f"Order {o['id']}: trade execution error: {e}")
+                    o["status"] = "trade_failed"
+                    o["trade_error"] = str(e)
+                    changed = True
+
         if changed:
             _save_orders(orders)
 

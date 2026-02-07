@@ -618,7 +618,7 @@ async function submitOrder() {
     setTxStep('sent');
     setTxScanLink('sent', `https://basescan.org/tx/${order.tx_hash}`);
 
-    // Poll order status for bridging
+    // Poll order status
     setTxStep('bridging');
     setTxMsg('Waiting for bridge confirmation…');
 
@@ -626,17 +626,29 @@ async function submitOrder() {
     while (!settled) {
       await new Promise(r => setTimeout(r, 5000));
       const st = await fetch(`/api/order/${order.id}`).then(r => r.json());
-      if (st.status === 'filled') {
-        setTxDone('Order filled successfully');
+      if (st.status === 'bridged') {
         if (st.receiving_tx_hash && st.receiving_chain_id) {
-          const scan = st.receiving_chain_id === 137 ? 'polygonscan.com' :
-                       st.receiving_chain_id === 8453 ? 'basescan.org' :
-                       st.receiving_chain_id === 1 ? 'etherscan.io' : 'basescan.org';
-          setTxScanLink('done', `https://${scan}/tx/${st.receiving_tx_hash}`);
+          const scan = st.receiving_chain_id === 137 ? 'polygonscan.com' : 'basescan.org';
+          setTxScanLink('bridging', `https://${scan}/tx/${st.receiving_tx_hash}`);
+        }
+        setTxStep('trading');
+        setTxMsg('Placing orders on markets…');
+      } else if (st.status === 'filled') {
+        setTxDone('Orders filled successfully');
+        if (st.trade_results) {
+          // Link to Polymarket order page via order_id
+          const results = Object.values(st.trade_results);
+          const oid = results.find(r => r.order_id)?.order_id;
+          if (oid) {
+            setTxScanLink('trading', `https://polymarket.com`);
+          }
         }
         settled = true;
       } else if (st.status === 'failed') {
-        setTxFailed('bridging', 'Bridge or execution failed');
+        setTxFailed('bridging', 'Bridge failed');
+        settled = true;
+      } else if (st.status === 'trade_failed') {
+        setTxFailed('trading', st.trade_error || 'Order execution failed');
         settled = true;
       }
     }
