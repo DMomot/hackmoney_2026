@@ -1,6 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from adapters import polymarket
 
 app = FastAPI()
 
@@ -14,3 +15,12 @@ async def root():
 @app.get("/market")
 async def market():
     return FileResponse("static/market.html")
+
+@app.get("/api/orderbook")
+async def orderbook(
+    event_id: str = Query(...),
+    team: str = Query(...),
+    side: str = Query("yes"),
+):
+    result = await polymarket.get_orderbook(event_id, team, side)
+    return result

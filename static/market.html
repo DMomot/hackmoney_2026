@@ -74,13 +74,20 @@
     .tabs {
       display: flex; gap: 0; margin-bottom: 20px; border-bottom: 1px solid #e8e8e8;
     }
+    .tabs-right { margin-left: auto; display: flex; }
     .tab {
-      padding: 12px 20px; font-size: 14px; color: #888; cursor: pointer;
+      padding: 10px 14px; font-size: 12px; color: #888; cursor: pointer;
       border-bottom: 2px solid transparent; font-weight: 500;
       background: none; border-top: none; border-left: none; border-right: none;
     }
     .tab.active { color: #111; border-bottom-color: #6366f1; font-weight: 600; }
     .tab:hover { color: #111; }
+
+    .outcome-active td { background: #f7f8fa; }
+
+    .book-inline {
+      padding: 16px 4px; border-top: 1px solid #f0f0f0;
+    }
 
     .book-section {
       background: #fff; border-radius: 16px; padding: 24px;
@@ -232,7 +239,6 @@ function platformIcons(platforms) {
 
 function render() {
   const o = event.outcomes[selectedOutcome];
-  const book = generateBook(o.yesPrice);
 
   document.getElementById('layout').innerHTML = `
     <div class="left">
@@ -262,8 +268,11 @@ function render() {
             </tr>
           </thead>
           <tbody>
-            ${event.outcomes.map((oc, i) => `
-              <tr>
+            ${event.outcomes.map((oc, i) => {
+              const isSelected = i === selectedOutcome;
+              const ocBook = generateBook(oc.yesPrice);
+              return `
+              <tr class="${isSelected ? 'outcome-active' : ''}" style="cursor:pointer" onclick="selectOutcome(${i},'${selectedSide}')">
                 <td>
                   <div class="outcome-cell">
                     <span>${oc.name}</span>
@@ -272,39 +281,42 @@ function render() {
                 </td>
                 <td class="pct-cell">${oc.pct}%</td>
                 <td style="text-align:center">
-                  <button class="buy-btn buy-yes" onclick="selectOutcome(${i},'yes')">Buy Yes ${oc.yesPrice.toFixed(1)}&#162;</button>
+                  <button class="buy-btn buy-yes" onclick="event.stopPropagation();selectOutcome(${i},'yes')">Buy Yes ${oc.yesPrice.toFixed(1)}&#162;</button>
                 </td>
                 <td style="text-align:center">
-                  <button class="buy-btn buy-no" onclick="selectOutcome(${i},'no')">Buy No ${oc.noPrice.toFixed(1)}&#162;</button>
+                  <button class="buy-btn buy-no" onclick="event.stopPropagation();selectOutcome(${i},'no')">Buy No ${oc.noPrice.toFixed(1)}&#162;</button>
                 </td>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Order Book -->
-      <div class="book-section">
-        <div class="tabs">
-          <button class="tab active">Trade Yes</button>
-          <button class="tab">Trade No</button>
-          <button class="tab">Graph</button>
-          ${event.platforms.map(p => `<button class="tab">${PLATFORMS[p].name}</button>`).join('')}
-        </div>
-        <table class="book-table">
-          <thead><tr><th>Price</th><th>Contracts</th><th>Total</th></tr></thead>
-          <tbody>
-            ${book.asks.map(a => `
-              <tr><td class="price-ask">${a.price}&#162;</td><td>${a.contracts}</td><td>$${a.total}</td></tr>
-            `).join('')}
-          </tbody>
-        </table>
-        <div class="book-divider">Trade Yes &nbsp; Last ${book.last}&#162; <span>&#10003;</span></div>
-        <table class="book-table">
-          <tbody>
-            ${book.bids.map(b => `
-              <tr><td class="price-bid">${b.price}&#162;</td><td>${b.contracts}</td><td>$${b.total}</td></tr>
-            `).join('')}
+              ${isSelected ? `
+              <tr><td colspan="4" style="padding:0; border-top:none;">
+                <div class="book-inline">
+                  <div class="tabs">
+                    <button class="tab active">Trade Yes</button>
+                    <button class="tab">Trade No</button>
+                    <div class="tabs-right">
+                      <button class="tab">Pooled</button>
+                      ${event.platforms.map(p => `<button class="tab">${PLATFORMS[p].name}</button>`).join('')}
+                    </div>
+                  </div>
+                  <table class="book-table">
+                    <thead><tr><th>Price</th><th>Contracts</th><th>Total</th></tr></thead>
+                    <tbody>
+                      ${ocBook.asks.map(a => `
+                        <tr><td class="price-ask">${a.price}&#162;</td><td>${a.contracts}</td><td>$${a.total}</td></tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                  <div class="book-divider">Trade Yes &nbsp; Last ${ocBook.last}&#162; <span>&#10003;</span></div>
+                  <table class="book-table">
+                    <tbody>
+                      ${ocBook.bids.map(b => `
+                        <tr><td class="price-bid">${b.price}&#162;</td><td>${b.contracts}</td><td>$${b.total}</td></tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </td></tr>` : ''}`;
+            }).join('')}
           </tbody>
         </table>
       </div>
