@@ -1,90 +1,54 @@
 [
   {
-    "title": "Super Bowl Champion 2026",
-    "icon": "🏈",
-    "outcomes": [
-      { "name": "Seattle", "pct": 68 },
-      { "name": "New England", "pct": 32 }
-    ],
-    "volume": "$898.8M",
-    "txs": "4.6M tx",
-    "platforms": ["polymarket", "azuro", "overtime"]
-  },
-  {
+    "id": "fifa-world-cup-2026",
     "title": "2026 FIFA World Cup Winner",
     "icon": "⚽",
+    "date": "Dec 31, 2026",
     "outcomes": [
-      { "name": "Spain", "pct": 16 },
-      { "name": "England", "pct": 13 }
+      { "name": "Spain", "pct": 16, "yesPrice": 15.2, "noPrice": 84.5 },
+      { "name": "England", "pct": 13, "yesPrice": 13.1, "noPrice": 86.5 }
     ],
     "volume": "$492.4M",
     "txs": "1.6M tx",
-    "platforms": ["polymarket", "azuro", "gnosis", "overtime"]
+    "platforms": ["polymarket", "opinion", "limitless"]
   },
   {
+    "id": "nba-champion-2026",
     "title": "2026 NBA Champion",
     "icon": "🏀",
+    "date": "Jun 30, 2026",
     "outcomes": [
-      { "name": "Oklahoma City", "pct": 39 },
-      { "name": "Denver Nuggets", "pct": 12 }
+      { "name": "Oklahoma City", "pct": 39, "yesPrice": 39.0, "noPrice": 61.0 },
+      { "name": "Denver Nuggets", "pct": 12, "yesPrice": 12.0, "noPrice": 88.0 }
     ],
     "volume": "$474.1M",
     "txs": "3.1M tx",
-    "platforms": ["polymarket", "azuro"]
+    "platforms": ["polymarket", "opinion", "limitless"]
   },
   {
-    "title": "Will Satoshi Move any Bitcoin in 2026?",
-    "icon": "₿",
-    "outcomes": [
-      { "name": "Yes", "pct": 7 },
-      { "name": "No", "pct": 93 }
-    ],
-    "volume": "$470.1M",
-    "txs": "412.2K tx",
-    "platforms": ["polymarket"]
-  },
-  {
-    "title": "Democratic Presidential Nominee 2028",
-    "icon": "🏛️",
-    "outcomes": [
-      { "name": "Gavin Newsom", "pct": 30 },
-      { "name": "Alexandria O...", "pct": 8 }
-    ],
-    "volume": "$450.4M",
-    "txs": "2.9M tx",
-    "platforms": ["polymarket"]
-  },
-  {
-    "title": "Will Polymarket launch a token by...?",
-    "icon": "🔮",
-    "outcomes": [
-      { "name": "March 31, 2026", "pct": 6 },
-      { "name": "June 30, 2026", "pct": 26 }
-    ],
-    "volume": "$431.3M",
-    "txs": "952.9K tx",
-    "platforms": ["polymarket", "overtime"]
-  },
-  {
+    "id": "epl-winner-2026",
     "title": "English Premier League Winner 2026",
     "icon": "⚽",
+    "date": "May 25, 2026",
     "outcomes": [
-      { "name": "Arsenal", "pct": 81 },
-      { "name": "Man City", "pct": 15 }
+      { "name": "Arsenal", "pct": 81, "yesPrice": 81.0, "noPrice": 19.0 },
+      { "name": "Man City", "pct": 15, "yesPrice": 15.0, "noPrice": 85.0 }
     ],
     "volume": "$413.6M",
     "txs": "1.7M tx",
-    "platforms": ["polymarket", "azuro"]
+    "platforms": ["polymarket", "opinion", "limitless"]
   },
   {
-    "title": "Who will Trump nominate as Fed Chair?",
-    "icon": "🏦",
+    "id": "ucl-winner-2026",
+    "title": "UEFA Champions League Winner",
+    "icon": "🏆",
+    "date": "May 30, 2026",
     "outcomes": [
-      { "name": "Kevin Warsh", "pct": 96 },
-      { "name": "Judy Shelton", "pct": 3 }
+      { "name": "Real Madrid", "pct": 22, "yesPrice": 22.0, "noPrice": 78.0 },
+      { "name": "Barcelona", "pct": 18, "yesPrice": 18.0, "noPrice": 82.0 }
     ],
-    "volume": "$387.5M",
-    "txs": "2.2M tx",
-    "platforms": ["polymarket"]
+    "volume": "$320.5M",
+    "txs": "1.2M tx",
+    "platforms": ["polymarket", "opinion", "limitless"]
   }
 ]

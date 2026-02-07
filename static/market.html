@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Market Detail</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f7f8fa; color: #1a1a1a; }
+
+    /* Back link */
+    .back {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 16px 32px; font-size: 14px; color: #555; text-decoration: none;
+      background: #fff; width: 100%; border-bottom: 1px solid #e5e5e5;
+    }
+    .back:hover { color: #111; }
+
+    /* Layout */
+    .layout {
+      max-width: 1000px; margin: 24px auto; padding: 0 20px;
+      display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start;
+    }
+    @media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
+
+    /* Event header */
+    .event-header {
+      background: #fff; border-radius: 16px; padding: 24px;
+      border: 1px solid #e8e8e8; margin-bottom: 20px;
+    }
+    .event-top { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+    .event-icon {
+      width: 56px; height: 56px; border-radius: 14px; background: #f0f0f5;
+      display: flex; align-items: center; justify-content: center; font-size: 28px;
+    }
+    .event-title { font-size: 22px; font-weight: 700; }
+    .event-meta {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+    .event-meta-item { font-size: 13px; color: #888; display: flex; align-items: center; gap: 4px; }
+    .platform-icons { display: flex; gap: 4px; }
+    .platform-icon {
+      width: 22px; height: 22px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+    }
+    .platform-icon img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Outcomes table */
+    .outcomes-section {
+      background: #fff; border-radius: 16px; padding: 24px;
+      border: 1px solid #e8e8e8;
+    }
+    .outcomes-table { width: 100%; border-collapse: collapse; }
+    .outcomes-table th {
+      text-align: left; font-size: 11px; color: #999; text-transform: uppercase;
+      letter-spacing: 0.5px; padding: 0 12px 12px; font-weight: 600;
+    }
+    .outcomes-table th:nth-child(3),
+    .outcomes-table th:nth-child(4) { text-align: center; }
+    .outcomes-table td { padding: 14px 12px; border-top: 1px solid #f0f0f0; }
+    .outcome-cell { display: flex; align-items: center; gap: 10px; }
+    .outcome-cell .platform-icons { margin-left: 4px; }
+    .pct-cell { font-size: 18px; font-weight: 700; }
+    .buy-btn {
+      padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      border: none; cursor: pointer; min-width: 44px; min-height: 44px;
+      transition: background .15s;
+    }
+    .buy-yes { background: #dcfce7; color: #16a34a; }
+    .buy-yes:hover { background: #bbf7d0; }
+    .buy-no { background: #fee2e2; color: #dc2626; }
+    .buy-no:hover { background: #fecaca; }
+
+    /* Order book tabs */
+    .tabs {
+      display: flex; gap: 0; margin-bottom: 20px; border-bottom: 1px solid #e8e8e8;
+    }
+    .tab {
+      padding: 12px 20px; font-size: 14px; color: #888; cursor: pointer;
+      border-bottom: 2px solid transparent; font-weight: 500;
+      background: none; border-top: none; border-left: none; border-right: none;
+    }
+    .tab.active { color: #111; border-bottom-color: #6366f1; font-weight: 600; }
+    .tab:hover { color: #111; }
+
+    .book-section {
+      background: #fff; border-radius: 16px; padding: 24px;
+      border: 1px solid #e8e8e8; margin-top: 20px;
+    }
+    .book-table { width: 100%; border-collapse: collapse; }
+    .book-table th {
+      text-align: right; font-size: 11px; color: #999; text-transform: uppercase;
+      padding: 0 8px 10px; font-weight: 600;
+    }
+    .book-table th:first-child { text-align: left; }
+    .book-table td { padding: 8px; text-align: right; font-size: 14px; border-top: 1px solid #f7f7f7; }
+    .book-table td:first-child { text-align: left; }
+    .price-ask { color: #dc2626; font-weight: 600; }
+    .price-bid { color: #16a34a; font-weight: 600; }
+    .book-divider {
+      text-align: center; padding: 10px; font-size: 13px; color: #888;
+      border-top: 1px solid #f0f0f0; border-bottom: 1px solid #f0f0f0;
+    }
+    .book-divider span { color: #16a34a; }
+
+    /* Right panel - Buy */
+    .buy-panel {
+      background: #fff; border-radius: 16px; padding: 24px;
+      border: 1px solid #e8e8e8; position: sticky; top: 24px;
+    }
+    .panel-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 20px; font-size: 16px; font-weight: 700;
+    }
+    .panel-icon {
+      width: 32px; height: 32px; border-radius: 8px; background: #f0f0f5;
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+
+    .panel-tabs { display: flex; margin-bottom: 20px; border-bottom: 1px solid #e8e8e8; }
+    .panel-tab {
+      flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: 500;
+      color: #888; cursor: pointer; border-bottom: 2px solid transparent;
+      background: none; border-top: none; border-left: none; border-right: none;
+    }
+    .panel-tab.active { color: #111; border-bottom-color: #6366f1; }
+
+    .market-prices { display: flex; gap: 10px; margin-bottom: 20px; }
+    .market-price {
+      flex: 1; padding: 14px; border-radius: 12px; text-align: center;
+      cursor: pointer; border: 2px solid transparent;
+    }
+    .market-price.yes { background: #dcfce7; color: #16a34a; }
+    .market-price.yes.active { border-color: #16a34a; }
+    .market-price.no { background: #fee2e2; color: #dc2626; }
+    .market-price.no.active { border-color: #dc2626; }
+    .market-price .label { font-size: 12px; font-weight: 600; }
+    .market-price .val { font-size: 22px; font-weight: 700; }
+
+    .field-label { font-size: 13px; color: #888; margin-bottom: 6px; }
+    .amount-input {
+      width: 100%; padding: 14px 16px; border-radius: 10px;
+      border: 1px solid #e5e5e5; font-size: 24px; font-weight: 700;
+      text-align: right; margin-bottom: 8px; outline: none;
+    }
+    .amount-input:focus { border-color: #6366f1; }
+    .balance-line {
+      text-align: right; font-size: 13px; color: #888; margin-bottom: 12px;
+    }
+    .quick-btns { display: flex; gap: 8px; margin-bottom: 20px; }
+    .quick-btn {
+      flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #e5e5e5;
+      background: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
+      min-height: 44px;
+    }
+    .quick-btn:hover { background: #f7f8fa; }
+
+    .breakdown { margin-bottom: 20px; }
+    .breakdown-row {
+      display: flex; justify-content: space-between; padding: 6px 0;
+      font-size: 13px; color: #666;
+    }
+    .breakdown-row .val { font-weight: 600; color: #111; }
+
+    .avg-price {
+      display: flex; justify-content: space-between; padding: 12px 0;
+      border-top: 1px solid #f0f0f0; margin-bottom: 16px;
+      font-size: 14px; font-weight: 600;
+    }
+
+    .submit-btn {
+      width: 100%; padding: 16px; border-radius: 12px; border: none;
+      background: #16a34a; color: #fff; font-size: 16px; font-weight: 700;
+      cursor: pointer; min-height: 52px; transition: background .15s;
+    }
+    .submit-btn:hover { background: #15803d; }
+    .submit-btn:disabled { opacity: .5; cursor: default; }
+
+    .loading { text-align: center; padding: 60px; color: #999; }
+  </style>
+</head>
+<body>
+
+<a href="/" class="back">&#8592; Back to Markets</a>
+
+<div class="layout" id="layout">
+  <div class="loading" style="grid-column:1/-1;">Loading...</div>
+</div>
+
+<script>
+const PLATFORMS = {
+  polymarket: { name: 'Polymarket', logo: '/public/polymarket.jpg' },
+  opinion:    { name: 'Opinion',    logo: '/public/opinion.jpg' },
+  limitless:  { name: 'Limitless',  logo: '/public/limitless.svg' },
+};
+
+// Mock order book
+function generateBook(yesPrice) {
+  const base = yesPrice / 100;
+  const asks = [];
+  const bids = [];
+  for (let i = 0; i < 4; i++) {
+    const p = (base + 0.001 * (3 - i));
+    asks.push({ price: (p * 100).toFixed(1), contracts: (Math.random() * 30000 + 5000).toFixed(2), total: (p * (Math.random() * 30000 + 5000)).toFixed(2) });
+  }
+  for (let i = 0; i < 4; i++) {
+    const p = (base - 0.001 * i);
+    bids.push({ price: (p * 100).toFixed(1), contracts: (Math.random() * 30000 + 3000).toFixed(2), total: (p * (Math.random() * 30000 + 3000)).toFixed(2) });
+  }
+  return { asks, bids, last: yesPrice.toFixed(1) };
+}
+
+let selectedOutcome = 0;
+let selectedSide = 'yes';
+let event = null;
+
+async function init() {
+  const id = new URLSearchParams(location.search).get('id');
+  const resp = await fetch('/static/events.json');
+  const events = await resp.json();
+  event = events.find(e => e.id === id) || events[0];
+
+  document.title = event.title;
+  render();
+}
+
+function platformIcons(platforms) {
+  return platforms.map(p => {
+    const pl = PLATFORMS[p];
+    return `<div class="platform-icon" title="${pl.name}"><img src="${pl.logo}" alt="${pl.name}"></div>`;
+  }).join('');
+}
+
+function render() {
+  const o = event.outcomes[selectedOutcome];
+  const book = generateBook(o.yesPrice);
+
+  document.getElementById('layout').innerHTML = `
+    <div class="left">
+      <!-- Event Header -->
+      <div class="event-header">
+        <div class="event-top">
+          <div class="event-icon">${event.icon}</div>
+          <div class="event-title">${event.title}</div>
+        </div>
+        <div class="event-meta">
+          <div class="platform-icons">${platformIcons(event.platforms)}</div>
+          <span class="event-meta-item">${event.date}</span>
+          <span class="event-meta-item">${event.volume}</span>
+          <span class="event-meta-item">${event.txs}</span>
+        </div>
+      </div>
+
+      <!-- Outcomes Table -->
+      <div class="outcomes-section">
+        <table class="outcomes-table">
+          <thead>
+            <tr>
+              <th>Outcome</th>
+              <th>% Chance</th>
+              <th>Buy Yes</th>
+              <th>Buy No</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${event.outcomes.map((oc, i) => `
+              <tr>
+                <td>
+                  <div class="outcome-cell">
+                    <span>${oc.name}</span>
+                    <div class="platform-icons">${platformIcons(event.platforms)}</div>
+                  </div>
+                </td>
+                <td class="pct-cell">${oc.pct}%</td>
+                <td style="text-align:center">
+                  <button class="buy-btn buy-yes" onclick="selectOutcome(${i},'yes')">Buy Yes ${oc.yesPrice.toFixed(1)}&#162;</button>
+                </td>
+                <td style="text-align:center">
+                  <button class="buy-btn buy-no" onclick="selectOutcome(${i},'no')">Buy No ${oc.noPrice.toFixed(1)}&#162;</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Order Book -->
+      <div class="book-section">
+        <div class="tabs">
+          <button class="tab active">Trade Yes</button>
+          <button class="tab">Trade No</button>
+          <button class="tab">Graph</button>
+          ${event.platforms.map(p => `<button class="tab">${PLATFORMS[p].name}</button>`).join('')}
+        </div>
+        <table class="book-table">
+          <thead><tr><th>Price</th><th>Contracts</th><th>Total</th></tr></thead>
+          <tbody>
+            ${book.asks.map(a => `
+              <tr><td class="price-ask">${a.price}&#162;</td><td>${a.contracts}</td><td>$${a.total}</td></tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div class="book-divider">Trade Yes &nbsp; Last ${book.last}&#162; <span>&#10003;</span></div>
+        <table class="book-table">
+          <tbody>
+            ${book.bids.map(b => `
+              <tr><td class="price-bid">${b.price}&#162;</td><td>${b.contracts}</td><td>$${b.total}</td></tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right panel -->
+    <div class="buy-panel">
+      <div class="panel-header">
+        <div class="panel-icon">${event.icon}</div>
+        ${o.name}
+      </div>
+
+      <div class="panel-tabs">
+        <button class="panel-tab active">Buy</button>
+        <button class="panel-tab">Sell</button>
+      </div>
+
+      <div class="field-label">Market</div>
+      <div class="market-prices">
+        <div class="market-price yes ${selectedSide === 'yes' ? 'active' : ''}" onclick="selectSide('yes')">
+          <div class="label">Yes</div>
+          <div class="val">${o.yesPrice.toFixed(1)}&#162;</div>
+        </div>
+        <div class="market-price no ${selectedSide === 'no' ? 'active' : ''}" onclick="selectSide('no')">
+          <div class="label">No</div>
+          <div class="val">${o.noPrice.toFixed(1)}&#162;</div>
+        </div>
+      </div>
+
+      <div class="field-label">Amount</div>
+      <input type="number" class="amount-input" id="amount" value="0" placeholder="0" />
+      <div class="balance-line">Balance: <b>1.99 USDC</b></div>
+
+      <div class="quick-btns">
+        <button class="quick-btn" onclick="setAmount(10)">10</button>
+        <button class="quick-btn" onclick="setAmount(50)">50</button>
+        <button class="quick-btn" onclick="setAmount(100)">100</button>
+        <button class="quick-btn" onclick="setAmount(999)">Max</button>
+      </div>
+
+      <div class="breakdown">
+        ${event.platforms.map(p => `
+          <div class="breakdown-row">
+            <span>Amount to ${PLATFORMS[p].name}</span>
+            <span class="val">$0.00</span>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="avg-price">
+        <span>Avg. Price</span>
+        <span>0.0&#162;</span>
+      </div>
+
+      <button class="submit-btn">Buy</button>
+    </div>
+  `;
+}
+
+function selectOutcome(i, side) {
+  selectedOutcome = i;
+  selectedSide = side;
+  render();
+}
+
+function selectSide(side) {
+  selectedSide = side;
+  render();
+}
+
+function setAmount(v) {
+  document.getElementById('amount').value = v;
+}
+
+init();
+</script>
+</body>
+</html>
