@@ -468,24 +468,24 @@ function render() {
       <select class="amount-input" style="font-size:14px;padding:12px 14px;" onchange="selectPosition(parseInt(this.value))">
         ${userPositions.map((pos, i) => {
           const pl = PLATFORMS[pos.platform] || {name: pos.platform};
-          return `<option value="${i}" ${selectedPosition === i ? 'selected' : ''}>${pl.name} · ${pos.side.toUpperCase()} @ ${(pos.buy_price * 100).toFixed(1)}¢ · ${(pos.shares / 1e6).toFixed(2)} shares</option>`;
+          return `<option value="${i}" ${selectedPosition === i ? 'selected' : ''}>${pl.name} · ${pos.side.toUpperCase()} @ ${(pos.buy_price * 100).toFixed(1)}¢ · ${pos.shares.toFixed(2)} shares</option>`;
         }).join('')}
       </select>
 
       ${selectedPosition !== null && userPositions[selectedPosition] ? (() => {
         const pos = userPositions[selectedPosition];
         const bestBid = liveBid(o.name, pos.side, pos.platform);
-        const sellShares = sellAmount || (pos.shares / 1e6);
+        const sellShares = sellAmount || pos.shares;
         const estReturn = bestBid ? (sellShares * bestBid / 100).toFixed(2) : '—';
         return `
       <div class="field-label" style="margin-top:16px;">Shares to sell</div>
-      <input type="number" class="amount-input" id="sellAmount" placeholder="${(pos.shares / 1e6).toFixed(2)}" value="${sellAmount || ''}" oninput="onSellAmountInput(this)" />
-      <div class="balance-line">Available: <b>${(pos.shares / 1e6).toFixed(2)} shares</b></div>
+      <input type="number" class="amount-input" id="sellAmount" placeholder="${pos.shares.toFixed(2)}" value="${sellAmount || ''}" oninput="onSellAmountInput(this)" />
+      <div class="balance-line">Available: <b>${pos.shares.toFixed(2)} shares</b></div>
 
       <div class="quick-btns">
-        <button class="quick-btn" onclick="setSellAmount(${Math.floor(pos.shares / 1e6 * 0.25 * 100) / 100})">25%</button>
-        <button class="quick-btn" onclick="setSellAmount(${Math.floor(pos.shares / 1e6 * 0.5 * 100) / 100})">50%</button>
-        <button class="quick-btn" onclick="setSellAmount(${Math.floor(pos.shares / 1e6 * 100) / 100})">Max</button>
+        <button class="quick-btn" onclick="setSellAmount(${Math.floor(pos.shares * 0.25 * 100) / 100})">25%</button>
+        <button class="quick-btn" onclick="setSellAmount(${Math.floor(pos.shares * 0.5 * 100) / 100})">50%</button>
+        <button class="quick-btn" onclick="setSellAmount(${Math.floor(pos.shares * 100) / 100})">Max</button>
       </div>
 
       <div class="route-block">
@@ -513,6 +513,9 @@ function selectOutcome(i, side) {
   selectedOutcome = i;
   selectedSide = side;
   routeResult = null;
+  selectedPosition = null;
+  sellAmount = null;
+  if (panelTab === 'sell' && walletAddress) loadPositions();
   const scrollY = window.scrollY;
   render();
   window.scrollTo(0, scrollY);
@@ -646,7 +649,7 @@ async function submitSellOrder() {
   if (selectedPosition === null || !userPositions[selectedPosition]) { alert('Select a position'); return; }
 
   const pos = userPositions[selectedPosition];
-  const sharesToSell = sellAmount ? Math.floor(sellAmount * 1e6) : pos.shares;
+  const sharesToSell = sellAmount || pos.shares;
   if (sharesToSell <= 0) { alert('Enter shares amount'); return; }
 
   openTxModal('sell');

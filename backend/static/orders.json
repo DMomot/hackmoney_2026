@@ -1062,5 +1062,127 @@
     "bridge_back_amount": 3540000000000000000,
     "receiving_tx_hash": "0x009ebbfc9f69996333677dd82081d79b08bfebf0f4c19fd60dc11eb5df13c57f",
     "receiving_chain_id": 8453
+  },
+  {
+    "id": "be13efc6",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "budget": 3,
+    "route": {
+      "direction": "buy",
+      "budget": 3,
+      "total_spent": 3,
+      "total_qty": 19.2308,
+      "avg_price": 0.156,
+      "avg_price_cents": 15.6,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "opinion": {
+          "spent": 3,
+          "qty": 19.2308,
+          "avg_price": 0.156,
+          "avg_price_cents": 15.6,
+          "market_id": 1354,
+          "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488"
+        }
+      },
+      "fills": [
+        {
+          "platform": "opinion",
+          "price": 0.156,
+          "price_cents": 15.6,
+          "size": 19.2308,
+          "cost": 3
+        }
+      ]
+    },
+    "platforms": {
+      "opinion": {
+        "market_id": "1354",
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "spent": 3,
+        "qty": 19.2308
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": null,
+    "tx_hash": "0xb6a37d93109d1ed9129a43f90a6e599afaa6b65dcf468551b758b450c66a330a",
+    "receiving_tx_hash": "0xb60d0f66962d525a21a8707e1a97486fd63e3f9688f575f01cfd70c191d1b824",
+    "receiving_chain_id": 56,
+    "created_at": "2026-02-07T22:45:40.856241+00:00",
+    "trade_results": {
+      "opinion": {
+        "order_id": "d9941ea1-0476-11f1-ac45-0a58a9feac02",
+        "status": "NEW",
+        "price": 0.156,
+        "amount": 2.98
+      }
+    },
+    "transfer_results": {
+      "opinion": {
+        "tx_hash": "0x8c239831ce4ab8291747d6a3eed359d492a42e498f7515c75cab16e7fe0b2282",
+        "success": true,
+        "amount": 15899749360440374754
+      }
+    }
+  },
+  {
+    "id": "59cf7546",
+    "direction": "sell",
+    "buy_order_id": "test-trade",
+    "wallet": "0x1ED167f87F77Ee1059A7bF2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "platforms": {
+      "polymarket": {
+        "token_id": "4394372887385518214471608448209527405727552777602031099972143344338178308080",
+        "market_id": "558934"
+      }
+    },
+    "shares_amount": 13750000,
+    "pull_tx": "0x55ba4bd0cc3ede6efcd69b67848be85c090fd0561bce0a306699f7d603d32f26",
+    "status": "completed",
+    "created_at": "2026-02-07T22:48:27.748451+00:00",
+    "trade_results": {
+      "polymarket": {
+        "order_id": "0x298285f6199625175914e6090e199458c194e8413a75f7862cf988f323ed8adc",
+        "status": "matched",
+        "price": 0.15,
+        "amount": 13.75,
+        "order_params": {
+          "salt": 1273978449,
+          "maker": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "signer": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "taker": "0x0000000000000000000000000000000000000000",
+          "tokenId": "4394372887385518214471608448209527405727552777602031099972143344338178308080",
+          "makerAmount": "13750000",
+          "takerAmount": "2062500",
+          "expiration": "0",
+          "nonce": "0",
+          "feeRateBps": "0",
+          "side": "SELL",
+          "signatureType": null,
+          "signature": "0xa3b3399b63fcd35d0c6f9349aeea24a83abcfdfcc87b8b13272d1b2d5a993abc5f52a7d448e4116f4dbcd146cdaf950e81c83d6b02fd6cfe6312f7e2c113c0231b",
+          "neg_risk": true,
+          "market_id": 558934,
+          "price": 0.15,
+          "amount": 13.75,
+          "order_amount": 13.75
+        }
+      }
+    },
+    "settle_results": {
+      "done": true,
+      "usdc_balance": 2069918,
+      "proceeds": 2062500
+    },
+    "bridge_back_tx": "0xcddac56a790e8ca655c1f4325884376e6b84823f0ac985c052ef68572a4f00da",
+    "bridge_back_amount": 2060000,
+    "receiving_tx_hash": "0xb72ccef13cba1191e874ba4ca31b6b124bfbbffb91dcac9b71c54278445ba881",
+    "receiving_chain_id": 8453
   }
 ]

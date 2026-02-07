@@ -410,10 +410,12 @@ async def get_order(order_id: str):
 
 @app.get("/api/positions")
 async def get_positions(wallet: str = Query(...), event_id: str = Query(None), team: str = Query(None)):
-    """Return filled buy orders as user positions."""
+    """Return on-chain balances per platform for filled buy orders."""
     orders = _load_orders()
     wallet_lower = wallet.lower()
-    positions = []
+
+    # Collect unique (platform, token_id) from filled buy orders
+    token_map = {}  # (platform, token_id) -> {market_id, buy_price, event_id, team, side, order_id}
     for o in orders:
         if o.get("wallet", "").lower() != wallet_lower:
             continue
@@ -425,30 +427,48 @@ async def get_positions(wallet: str = Query(...), event_id: str = Query(None), t
             continue
         if team and o.get("team") != team:
             continue
-        # Detect which platform the position is on
-        platform = None
-        for pname in o.get("platforms", {}):
-            if o["platforms"][pname].get("token_id"):
-                platform = pname
-                break
-        platform = platform or "polymarket"
-        pdata = o.get("platforms", {}).get(platform, {})
-        transfer = o.get("transfer_results", {}).get(platform, {})
-        shares = transfer.get("amount", 0)
-        if shares <= 0:
-            continue
-        positions.append({
-            "order_id": o["id"],
-            "event_id": o.get("event_id"),
-            "team": o.get("team"),
-            "side": o.get("side"),
-            "platform": platform,
-            "token_id": pdata.get("token_id"),
-            "market_id": pdata.get("market_id"),
-            "shares": shares,
-            "buy_price": o.get("trade_results", {}).get(platform, {}).get("price", 0),
-            "budget": o.get("budget", 0),
-        })
+        for pname, pdata in o.get("platforms", {}).items():
+            tid = pdata.get("token_id")
+            if not tid:
+                continue
+            key = (pname, tid)
+            if key not in token_map:
+                token_map[key] = {
+                    "order_id": o["id"],
+                    "market_id": pdata.get("market_id"),
+                    "event_id": o.get("event_id"),
+                    "team": o.get("team"),
+                    "side": o.get("side"),
+                    "buy_price": o.get("trade_results", {}).get(pname, {}).get("price", 0),
+                    "budget": o.get("budget", 0),
+                }
+
+    # Query on-chain balance for each token
+    positions = []
+    for (platform, token_id), meta in token_map.items():
+        try:
+            adapter = _get_adapter(platform)
+            if not adapter:
+                continue
+            bal = adapter.get_user_shares_balance(token_id, wallet)
+            if bal <= 0:
+                continue
+            decimals = PLATFORM_DECIMALS.get(platform, 6)
+            positions.append({
+                "order_id": meta["order_id"],
+                "event_id": meta["event_id"],
+                "team": meta["team"],
+                "side": meta["side"],
+                "platform": platform,
+                "token_id": token_id,
+                "market_id": meta["market_id"],
+                "shares": round(bal / (10 ** decimals), 4),
+                "shares_raw": bal,
+                "buy_price": meta["buy_price"],
+                "budget": meta["budget"],
+            })
+        except Exception as e:
+            logger.error(f"Position balance check failed for {platform}/{token_id}: {e}")
     return positions
 
 
@@ -491,7 +511,12 @@ async def create_sell(body: dict = Body(...)):
     if user_shares <= 0:
         return {"error": f"user has no shares for token {token_id}"}
 
-    shares_to_sell = sell_amount if sell_amount else user_shares
+    decimals = PLATFORM_DECIMALS.get(platform, 6)
+    if sell_amount:
+        shares_to_sell = int(float(sell_amount) * (10 ** decimals))
+        shares_to_sell = min(shares_to_sell, user_shares)
+    else:
+        shares_to_sell = user_shares
 
     # Check relayer approved by user on CTF
     chain_id = PLATFORM_CHAIN.get(platform, 137)
@@ -728,17 +753,22 @@ def _execute_sell(order: dict) -> dict:
         if amount < 1.0:
             return {"error": f"shares too small to sell: {amount}"}
 
+        # Snapshot balance BEFORE placing order
+        get_bal = adapter.get_usdt_balance if platform == "opinion" else adapter.get_usdc_balance
+        balance_before = get_bal()
+
         resp = adapter.place_order(
             token_id=token_id,
             market_id=int(market_id) if market_id else 0,
             amount=amount, price=price, side="SELL",
         )
-        logger.info(f"Sell {order['id']}: placed SELL on {platform}, status={resp.get('status')}")
+        logger.info(f"Sell {order['id']}: placed SELL on {platform}, status={resp.get('status')}, balance_before={balance_before}")
         return {
             "order_id": resp.get("orderID") or resp.get("orderId"),
             "status": resp.get("status"),
             "price": price,
             "amount": amount,
+            "balance_before": balance_before,
             "order_params": resp.get("_params", {}),
         }
     except Exception as e:
@@ -747,35 +777,31 @@ def _execute_sell(order: dict) -> dict:
 
 
 def _settle_sell(order: dict) -> dict:
-    """Wait for stablecoin to appear on relayer after sell settlement. 5 retries, 5s apart."""
+    """Wait for sell settlement: balance must increase above pre-order snapshot. 5 retries, 5s apart."""
     platform = next(iter(order.get("platforms", {})), "polymarket")
     adapter = _get_adapter(platform)
     if not adapter:
         return {"done": False}
 
     decimals = PLATFORM_DECIMALS.get(platform, 6)
-    # Get balance check method
-    get_bal = adapter.get_usdt_balance if platform == "opinion" else adapter.get_usdc_balance
-
-    initial_balance = get_bal()
     trade = order.get("trade_results", {}).get(platform, {})
-    expected = trade.get("price", 0) * trade.get("amount", 0)
-    expected_raw = int(expected * (10 ** decimals)) if expected > 0 else 0
+    balance_before = trade.get("balance_before", 0)
+    get_bal = adapter.get_usdt_balance if platform == "opinion" else adapter.get_usdc_balance
 
     for attempt in range(5):
         balance = get_bal()
-        if balance > initial_balance or balance >= expected_raw:
-            proceeds = balance - initial_balance
-            logger.info(f"Sell {order['id']}: settled on {platform}, proceeds={proceeds / (10 ** decimals):.4f}")
-            return {"done": True, "usdc_balance": balance, "initial_balance": initial_balance, "proceeds": proceeds}
-        logger.info(f"Sell {order['id']}: waiting for settlement on {platform}, attempt {attempt+1}/5")
+        if balance > balance_before:
+            proceeds = balance - balance_before
+            logger.info(f"Sell {order['id']}: settled, before={balance_before}, after={balance}, proceeds={proceeds / (10 ** decimals):.4f}")
+            return {"done": True, "balance_before": balance_before, "balance_after": balance, "proceeds": proceeds}
+        logger.info(f"Sell {order['id']}: waiting for settlement, attempt {attempt+1}/5, balance={balance}, need > {balance_before}")
         if attempt < 4:
             time.sleep(5)
 
-    final = get_bal()
-    if final > 0:
-        proceeds = final - initial_balance
-        return {"done": True, "usdc_balance": final, "initial_balance": initial_balance, "proceeds": proceeds}
+    balance = get_bal()
+    if balance > balance_before:
+        proceeds = balance - balance_before
+        return {"done": True, "balance_before": balance_before, "balance_after": balance, "proceeds": proceeds}
     return {"done": False}
 
 
