@@ -5343,5 +5343,133 @@
     },
     "bridge_back_tx": "0xa4195e133b4b9bda3d481a8b3c7f6da3f68b1176480f963d58a59e6adcd07908",
     "bridge_back_amount": 8737708
+  },
+  {
+    "id": "2c9d8e41",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "budget": 3,
+    "route": {
+      "direction": "buy",
+      "budget": 3,
+      "total_spent": 3,
+      "total_qty": 19.2308,
+      "avg_price": 0.156,
+      "avg_price_cents": 15.6,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "opinion": {
+          "spent": 3,
+          "qty": 19.2308,
+          "avg_price": 0.156,
+          "avg_price_cents": 15.6,
+          "market_id": 1354,
+          "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488"
+        }
+      },
+      "fills": [
+        {
+          "platform": "opinion",
+          "price": 0.156,
+          "price_cents": 15.6,
+          "size": 19.2308,
+          "cost": 3
+        }
+      ]
+    },
+    "platforms": {
+      "opinion": {
+        "market_id": "1354",
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "spent": 3,
+        "qty": 19.2308
+      }
+    },
+    "status": "failed",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": null,
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T13:29:27.579385+00:00",
+    "error": "Router.transferERC20 reverted: 0xd50f558b3120152f52982294ecc0a692c7c5a535a489d4ab85f51dae4f1792e9"
+  },
+  {
+    "id": "eece4ed5",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "budget": 3,
+    "route": {
+      "direction": "buy",
+      "budget": 3,
+      "total_spent": 3,
+      "total_qty": 19.2308,
+      "avg_price": 0.156,
+      "avg_price_cents": 15.6,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "opinion": {
+          "spent": 3,
+          "qty": 19.2308,
+          "avg_price": 0.156,
+          "avg_price_cents": 15.6,
+          "market_id": 1354,
+          "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488"
+        }
+      },
+      "fills": [
+        {
+          "platform": "opinion",
+          "price": 0.156,
+          "price_cents": 15.6,
+          "size": 19.2308,
+          "cost": 3
+        }
+      ]
+    },
+    "platforms": {
+      "opinion": {
+        "market_id": "1354",
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "spent": 3,
+        "qty": 19.2308
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0xb202d6e006ecd7ae0ad12145fe732d95df17401622d84433686a9fa229268ff0",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T13:31:11.394472+00:00",
+    "bridges": {
+      "56": {
+        "amount": 3000000,
+        "bridge_tx": "0xb12a630e115323538f44e652361d1636fab303dc8653fb5349ad77ec32719089",
+        "status": "done"
+      }
+    },
+    "bridge_tx": "0xb12a630e115323538f44e652361d1636fab303dc8653fb5349ad77ec32719089",
+    "trade_results": {
+      "opinion": {
+        "order_id": "963f0929-04f2-11f1-a486-0a58a9feac02",
+        "status": "NEW",
+        "price": 0.156,
+        "amount": 3.0
+      }
+    },
+    "transfer_results": {
+      "opinion": {
+        "tx_hash": "kept_on_smart_wallet",
+        "success": true,
+        "amount": 16039487179487181536
+      }
+    }
   }
 ]
