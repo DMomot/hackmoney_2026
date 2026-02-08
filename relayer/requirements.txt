@@ -1,3 +1,5 @@
 web3
 py-clob-client
 eth-account
+opinion_clob_sdk
+requests
