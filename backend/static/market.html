@@ -474,6 +474,15 @@ function render() {
 
       <button class="submit-btn" id="buyBtn" onclick="openChainSelectModal('buy', (c) => submitOrder(c))">Buy</button>
 
+      ${event.id === 'anthropic-acquired-2027' ? `
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid #eee;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="number" id="testBatchAmount" value="6" style="width:70px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:14px;" />
+          <button onclick="testBatch()" style="flex:1;padding:8px 16px;background:#7c3aed;color:#fff;border:none;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;">Test Batch Buy</button>
+        </div>
+        <div style="font-size:11px;color:#999;margin-top:4px;">Split 50/50: Polymarket + Limitless from BSC</div>
+      </div>` : ''}
+
       ` : `
       <!-- SELL PANEL -->
       <div class="field-label">Market</div>
@@ -1020,10 +1029,15 @@ async function submitOrder(fromChainId) {
   const routerAddr = chainRouters[String(fromChainId)] || cfg.router_address;
   if (!routerAddr) { alert('Router not configured'); return; }
 
-  const primaryPlatform = routeResult.per_platform ? Object.keys(routeResult.per_platform)[0] : '';
-  const platformChain = PLATFORMS[primaryPlatform]?.chain || 0;
-  // Same chain = fromChain equals platformChain (no bridge needed)
-  const sameChain = fromChainId === platformChain;
+  // Detect all target chains from route
+  const targetChains = new Set();
+  if (routeResult.per_platform) {
+    for (const p of Object.keys(routeResult.per_platform)) {
+      targetChains.add(PLATFORMS[p]?.chain || 0);
+    }
+  }
+  const sameChain = targetChains.size > 0 && [...targetChains].every(c => c === fromChainId);
+  const bridgeChainLabel = [...targetChains].filter(c => c !== fromChainId).map(c => CHAIN_NAME[c] || c).join(' & ') || 'target chain';
   const fromChainHex = CHAIN_HEX[fromChainId] || '0x2105';
   const fromScan = CHAIN_SCAN[fromChainId] || 'basescan.org';
   const stableAddr = CHAIN_STABLE[fromChainId] || USDC_ADDRESS;
@@ -1031,7 +1045,7 @@ async function submitOrder(fromChainId) {
   // Always approve Router on the source chain
   const spenderAddr = routerAddr;
 
-  openTxModal('buy', sameChain, CHAIN_NAME[platformChain] || 'Base');
+  openTxModal('buy', sameChain, bridgeChainLabel);
   setTxStep('approving');
 
   try {
@@ -1113,7 +1127,7 @@ async function submitOrder(fromChainId) {
       setTxStep('bridging');
       setTxMsg('Waiting for bridge confirmation…');
     } else {
-      const txScan = CHAIN_SCAN[platformChain] || 'basescan.org';
+      const txScan = CHAIN_SCAN[fromChainId] || 'basescan.org';
       setTxScanLink('relaying', `https://${txScan}/tx/${order.tx_hash}`);
       setTxMsg('Transferred, placing orders…');
     }
@@ -1122,33 +1136,56 @@ async function submitOrder(fromChainId) {
     while (!settled) {
       await new Promise(r => setTimeout(r, 5000));
       const st = await fetch(`/api/order/${order.id}`).then(r => r.json());
-      if (st.status === 'bridged') {
+
+      // Multi-bridge progress: count done/total from st.bridges
+      if (st.status === 'sent' && st.bridges) {
+        const entries = Object.values(st.bridges);
+        const total = entries.length;
+        const done = entries.filter(b => b.status === 'done').length;
+        if (total > 1) {
+          setTxMsg(`Bridging ${done} of ${total}…`);
+        }
+      } else if (st.status === 'bridged') {
         if (st.receiving_tx_hash && st.receiving_chain_id) {
           const scan = st.receiving_chain_id === 137 ? 'polygonscan.com' : 'basescan.org';
           setTxScanLink('bridging', `https://${scan}/tx/${st.receiving_tx_hash}`);
         }
         setTxStep('trading');
-        setTxMsg('Placing orders on markets…');
+        // Multi-platform trade progress
+        const platCount = Object.keys(st.platforms || {}).length;
+        const tradeDone = Object.keys(st.trade_results || {}).length;
+        if (platCount > 1) {
+          setTxMsg(`Placing orders ${tradeDone} of ${platCount}…`);
+        } else {
+          setTxMsg('Placing orders on markets…');
+        }
       } else if (st.status === 'matched') {
         setTxStep('settling');
-        setTxMsg('Waiting for settlement & transferring shares…');
+        const platCount = Object.keys(st.platforms || {}).length;
+        const transferDone = Object.keys(st.transfer_results || {}).length;
+        if (platCount > 1) {
+          setTxMsg(`Delivering shares ${transferDone} of ${platCount}…`);
+        } else {
+          setTxMsg('Waiting for settlement & transferring shares…');
+        }
       } else if (st.status === 'filled') {
         // Build result summary
         let sharesTotal = 0;
+        const platCount = Object.keys(st.platforms || {}).length;
         if (st.transfer_results) {
           const txs = Object.entries(st.transfer_results);
-          const entry = txs.find(([,t]) => t.tx_hash);
-          if (entry) {
-            const [pname, t] = entry;
-            const dec = PLATFORM_DECIMALS[pname] || 6;
-            sharesTotal = (t.amount || 0) / (10 ** dec);
-            const scan = CHAIN_SCAN[PLATFORMS[pname]?.chain] || 'basescan.org';
-            setTxScanLink('settling', `https://${scan}/tx/${t.tx_hash}`);
+          for (const [pname, t] of txs) {
+            if (t.tx_hash) {
+              const dec = PLATFORM_DECIMALS[pname] || 6;
+              sharesTotal += (t.amount || 0) / (10 ** dec);
+              const scan = CHAIN_SCAN[PLATFORMS[pname]?.chain] || 'basescan.org';
+              setTxScanLink('settling', `https://${scan}/tx/${t.tx_hash}`);
+            }
           }
         }
         const spent = st.budget || 0;
         const msg = sharesTotal > 0
-          ? `Spent $${spent.toFixed(2)} USDC → ${sharesTotal.toFixed(2)} shares`
+          ? `Spent $${spent.toFixed(2)} → ${sharesTotal.toFixed(2)} shares` + (platCount > 1 ? ` across ${platCount} platforms` : '')
           : 'Shares delivered to your wallet';
         setTxDone(msg);
         settled = true;
@@ -1164,6 +1201,32 @@ async function submitOrder(fromChainId) {
     }
   } catch (e) {
     setTxFailed('approving', e.message || String(e));
+  }
+}
+
+// --- Test Batch Buy ---
+async function testBatch() {
+  if (!walletAddress) { alert('Connect wallet first'); return; }
+  const amount = parseFloat(document.getElementById('testBatchAmount').value) || 6;
+  const eventId = new URLSearchParams(location.search).get('id') || event.id;
+  const o = event.outcomes[selectedOutcome || 0];
+  const team = o.name;
+  const side = selectedSide || 'yes';
+
+  try {
+    const resp = await fetch('/api/test_batch_route', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ budget: amount, event_id: eventId, team, side }),
+    });
+    routeResult = await resp.json();
+    if (routeResult.error) { alert('Route error: ' + routeResult.error); return; }
+    if (routeResult.total_spent <= 0) { alert('No liquidity on platforms'); return; }
+    renderKeepScroll();
+    // Trigger buy from BSC (chain 56)
+    submitOrder(56);
+  } catch (e) {
+    alert('Test batch failed: ' + e.message);
   }
 }
 

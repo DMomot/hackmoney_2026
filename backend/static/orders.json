@@ -3666,5 +3666,1682 @@
     "bridge_retries": 99,
     "bridge_error": "{'code': -32000, 'message': 'invalid sender: invalid chain id for signer: have 8453 want 137'}",
     "trade_retries": 99
+  },
+  {
+    "id": "c615e623",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "yes",
+    "budget": 6,
+    "route": {
+      "direction": "buy",
+      "budget": 6,
+      "total_spent": 6,
+      "total_qty": 52.7273,
+      "avg_price": 0.113793,
+      "avg_price_cents": 11.38,
+      "unfilled": 0,
+      "platforms_used": 2,
+      "per_platform": {
+        "polymarket": {
+          "spent": 3,
+          "qty": 27.7273,
+          "avg_price": 0.108197,
+          "avg_price_cents": 10.82,
+          "market_id": 676846,
+          "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318"
+        },
+        "limitless": {
+          "spent": 3,
+          "qty": 25,
+          "avg_price": 0.12,
+          "avg_price_cents": 12,
+          "market_id": "anthropic-acquired-before-2027-1764856036744",
+          "token_id": "34060206326837235224779580665946116418567179933670132459829145708311252401570"
+        }
+      },
+      "fills": []
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "676846",
+        "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318",
+        "spent": 3,
+        "qty": 27.7273
+      },
+      "limitless": {
+        "market_id": "anthropic-acquired-before-2027-1764856036744",
+        "token_id": "34060206326837235224779580665946116418567179933670132459829145708311252401570",
+        "spent": 3,
+        "qty": 25
+      }
+    },
+    "status": "trade_failed",
+    "approve_tx_hash": "0xc5742cc054089cd5ec5003faf7a8a2676cb44112348c0be1f46857d2fd5127e2",
+    "from_chain": 56,
+    "tx_hash": "0x8dd3adfb8bec9cbb4187d403c2e5c6c8a8f56833a9a30e7ad493f600766146a8",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T11:24:50.370405+00:00",
+    "bridges": {
+      "137": {
+        "amount": 3000000000000000000,
+        "bridge_tx": "0xb1a4938e0c0144113c9479d81921136e8571846d8c1174f63f5cf170ebd16b3f",
+        "status": "done"
+      },
+      "8453": {
+        "amount": 3000000000000000000,
+        "bridge_tx": "0x7657b1758e1687a2ad844f577b9e4c5a2cedf888f4e6d47349d162bb0a2f6706",
+        "status": "done"
+      }
+    },
+    "bridge_tx": "0xb1a4938e0c0144113c9479d81921136e8571846d8c1174f63f5cf170ebd16b3f",
+    "trade_results": {
+      "polymarket": {
+        "error": "PolyApiException[status_code=400, error_message={'error': \"order couldn't be fully filled. FOK orders are fully filled or killed.\"}]"
+      },
+      "limitless": {
+        "error": "Limitless order failed: 400 {\"message\":\"Invalid signature. Exchange address for this market: 0xa4409d988ca2218d956beefd3874100f444f0dc3\"}"
+      }
+    },
+    "trade_retries": 5,
+    "trade_error": "{'polymarket': 'PolyApiException[status_code=400, error_message={\\'error\\': \"order couldn\\'t be fully filled. FOK orders are fully filled or killed.\"}]', 'limitless': 'Limitless order failed: 400 {\"message\":\"Invalid signature. Exchange address for this market: 0xa4409d988ca2218d956beefd3874100f444f0dc3\"}'}"
+  },
+  {
+    "id": "03a5045f",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "yes",
+    "budget": 4,
+    "route": {
+      "direction": "buy",
+      "budget": 4,
+      "total_spent": 4,
+      "total_qty": 35.3031,
+      "avg_price": 0.113304,
+      "avg_price_cents": 11.33,
+      "unfilled": 0,
+      "platforms_used": 2,
+      "per_platform": {
+        "polymarket": {
+          "spent": 2,
+          "qty": 18.6364,
+          "avg_price": 0.107317,
+          "avg_price_cents": 10.73,
+          "market_id": 676846,
+          "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318"
+        },
+        "limitless": {
+          "spent": 2,
+          "qty": 16.6667,
+          "avg_price": 0.12,
+          "avg_price_cents": 12,
+          "market_id": "anthropic-acquired-before-2027-1764856036744",
+          "token_id": "34060206326837235224779580665946116418567179933670132459829145708311252401570"
+        }
+      },
+      "fills": []
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "676846",
+        "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318",
+        "spent": 2,
+        "qty": 18.6364
+      },
+      "limitless": {
+        "market_id": "anthropic-acquired-before-2027-1764856036744",
+        "token_id": "34060206326837235224779580665946116418567179933670132459829145708311252401570",
+        "spent": 2,
+        "qty": 16.6667
+      }
+    },
+    "status": "trade_failed",
+    "approve_tx_hash": "0xbda42d0ab4b04109191295af75faab93282b011c1a22a4173196bcecf5de6e16",
+    "from_chain": 56,
+    "tx_hash": "0x3a497820257f3af39f97ad0dd61dcfa602cf9e56cf391fd139cf82a0564875ed",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T11:38:53.553481+00:00",
+    "bridges": {
+      "137": {
+        "amount": 2000000000000000000,
+        "bridge_tx": "0x7202ba51387a9ed166104994ef32554277762fb2c155edbb8c6f56be8916db7d",
+        "status": "done"
+      },
+      "8453": {
+        "amount": 2000000000000000000,
+        "bridge_tx": "0x8a74c2186bf1588533fda1cd51148d0a00f94cfdf9a0d2cb3fccf0d6ded9e283",
+        "status": "done"
+      }
+    },
+    "bridge_tx": "0x7202ba51387a9ed166104994ef32554277762fb2c155edbb8c6f56be8916db7d",
+    "trade_results": {
+      "polymarket": {
+        "error": "PolyApiException[status_code=400, error_message={'error': 'invalid amount for a marketable BUY order ($0.5), min size: $1'}]"
+      },
+      "limitless": {
+        "error": "Limitless order failed: 400 {\"message\":\"Order amounts tick violation: price(0.12) * contracts(16666666) = 1999999.92 is not a whole (integer) number. Use contracts ending with price tick size zeros (3), e.g. price=0.12, contracts=16666000, collateral=1999920\"}"
+      }
+    },
+    "trade_retries": 5,
+    "trade_error": "{'polymarket': \"PolyApiException[status_code=400, error_message={'error': 'invalid amount for a marketable BUY order ($0.5), min size: $1'}]\", 'limitless': 'Limitless order failed: 400 {\"message\":\"Order amounts tick violation: price(0.12) * contracts(16666666) = 1999999.92 is not a whole (integer) number. Use contracts ending with price tick size zeros (3), e.g. price=0.12, contracts=16666000, collateral=1999920\"}'}"
+  },
+  {
+    "id": "23a64c07",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "yes",
+    "budget": 4,
+    "route": {
+      "direction": "buy",
+      "budget": 4,
+      "total_spent": 4,
+      "total_qty": 35.3031,
+      "avg_price": 0.113304,
+      "avg_price_cents": 11.33,
+      "unfilled": 0,
+      "platforms_used": 2,
+      "per_platform": {
+        "polymarket": {
+          "spent": 2,
+          "qty": 18.6364,
+          "avg_price": 0.107317,
+          "avg_price_cents": 10.73,
+          "market_id": 676846,
+          "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318"
+        },
+        "limitless": {
+          "spent": 2,
+          "qty": 16.6667,
+          "avg_price": 0.12,
+          "avg_price_cents": 12,
+          "market_id": "anthropic-acquired-before-2027-1764856036744",
+          "token_id": "34060206326837235224779580665946116418567179933670132459829145708311252401570"
+        }
+      },
+      "fills": []
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "676846",
+        "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318",
+        "spent": 2,
+        "qty": 18.6364
+      },
+      "limitless": {
+        "market_id": "anthropic-acquired-before-2027-1764856036744",
+        "token_id": "34060206326837235224779580665946116418567179933670132459829145708311252401570",
+        "spent": 2,
+        "qty": 16.6667
+      }
+    },
+    "status": "trade_failed",
+    "approve_tx_hash": "0x0a6f0efa8911f1ce3e385013edae9756ad2c276d93b3953d59335665bbc9110e",
+    "from_chain": 56,
+    "tx_hash": "0x9c5701aa71c88c42472476f9fa7b79d1715a76a4bde34d3b69809eca8aee89be",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T11:47:30.403641+00:00",
+    "bridges": {
+      "137": {
+        "amount": 2000000000000000000,
+        "bridge_tx": "0x98b45e009ccdaa97658adc42e82268318080c8a62a5990f8aa50a5467192d865",
+        "status": "done"
+      },
+      "8453": {
+        "amount": 2000000000000000000,
+        "bridge_tx": "0xc0b6332a9a67512ce3658ec840e382e8d68d38e6a746b7a82bddd687face1ae5",
+        "status": "done"
+      }
+    },
+    "bridge_tx": "0x98b45e009ccdaa97658adc42e82268318080c8a62a5990f8aa50a5467192d865",
+    "trade_results": {
+      "polymarket": {
+        "error": "PolyApiException[status_code=400, error_message={'error': \"order couldn't be fully filled. FOK orders are fully filled or killed.\"}]"
+      },
+      "limitless": {
+        "error": "Limitless order failed: 400 {\"message\":\"Invalid signature. Exchange address for this market: 0xa4409d988ca2218d956beefd3874100f444f0dc3\"}"
+      }
+    },
+    "trade_retries": 5,
+    "trade_error": "{'polymarket': 'PolyApiException[status_code=400, error_message={\\'error\\': \"order couldn\\'t be fully filled. FOK orders are fully filled or killed.\"}]', 'limitless': 'Limitless order failed: 400 {\"message\":\"Invalid signature. Exchange address for this market: 0xa4409d988ca2218d956beefd3874100f444f0dc3\"}'}"
+  },
+  {
+    "id": "3a4b9b14",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 18.6364,
+      "avg_price": 0.107317,
+      "avg_price_cents": 10.73,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 2,
+          "qty": 18.6364,
+          "avg_price": 0.107317,
+          "avg_price_cents": 10.73,
+          "market_id": 676846,
+          "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.1,
+          "price_cents": 10,
+          "size": 5,
+          "cost": 0.5
+        },
+        {
+          "platform": "polymarket",
+          "price": 0.11,
+          "price_cents": 11,
+          "size": 13.6364,
+          "cost": 1.5
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Event anthropic-acquired-2027 not found"
+      }
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "676846",
+        "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318",
+        "spent": 2,
+        "qty": 18.6364
+      }
+    },
+    "status": "failed",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0xadc55695cbea5ce4750dd76fff3fe0ad022c5d18f67a403125776b9526a26df1",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T11:52:05.054042+00:00",
+    "error": "{'code': -32000, 'message': 'in-flight transaction limit reached for delegated accounts'}"
+  },
+  {
+    "id": "030a7b04",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 18.6364,
+      "avg_price": 0.107317,
+      "avg_price_cents": 10.73,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 2,
+          "qty": 18.6364,
+          "avg_price": 0.107317,
+          "avg_price_cents": 10.73,
+          "market_id": 676846,
+          "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.1,
+          "price_cents": 10,
+          "size": 5,
+          "cost": 0.5
+        },
+        {
+          "platform": "polymarket",
+          "price": 0.11,
+          "price_cents": 11,
+          "size": 13.6364,
+          "cost": 1.5
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Event anthropic-acquired-2027 not found"
+      }
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "676846",
+        "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318",
+        "spent": 2,
+        "qty": 18.6364
+      }
+    },
+    "status": "failed",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0x6e4c7ce6d83782d8dded62868d1dc632f2b309e87ab562c3512068558627bd66",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T11:58:53.526396+00:00",
+    "error": "{'code': -32000, 'message': 'in-flight transaction limit reached for delegated accounts'}"
+  },
+  {
+    "id": "7b44cf1c",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 18.6364,
+      "avg_price": 0.107317,
+      "avg_price_cents": 10.73,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 2,
+          "qty": 18.6364,
+          "avg_price": 0.107317,
+          "avg_price_cents": 10.73,
+          "market_id": 676846,
+          "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.1,
+          "price_cents": 10,
+          "size": 5,
+          "cost": 0.5
+        },
+        {
+          "platform": "polymarket",
+          "price": 0.11,
+          "price_cents": 11,
+          "size": 13.6364,
+          "cost": 1.5
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Event anthropic-acquired-2027 not found"
+      }
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "676846",
+        "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318",
+        "spent": 2,
+        "qty": 18.6364
+      }
+    },
+    "status": "failed",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0x95b9eac15c27b83770ed42b6b5ee75278656daf4a5ab8a11682c58409e09fc5c",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T12:09:32.852948+00:00",
+    "bridges": {
+      "137": {
+        "amount": 2000000,
+        "bridge_tx": "0xbb820db0ae4c1dd899cec6897896e7f2e3f7b9652b3e62b4a87bf118dbefc13b",
+        "status": "failed"
+      }
+    },
+    "bridge_tx": "0xbb820db0ae4c1dd899cec6897896e7f2e3f7b9652b3e62b4a87bf118dbefc13b",
+    "error": "one or more bridges failed"
+  },
+  {
+    "id": "ab96ddc5",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 18.6364,
+      "avg_price": 0.107317,
+      "avg_price_cents": 10.73,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 2,
+          "qty": 18.6364,
+          "avg_price": 0.107317,
+          "avg_price_cents": 10.73,
+          "market_id": 676846,
+          "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.1,
+          "price_cents": 10,
+          "size": 5,
+          "cost": 0.5
+        },
+        {
+          "platform": "polymarket",
+          "price": 0.11,
+          "price_cents": 11,
+          "size": 13.6364,
+          "cost": 1.5
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Event anthropic-acquired-2027 not found"
+      }
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "676846",
+        "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318",
+        "spent": 2,
+        "qty": 18.6364
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0xa278a59a4471f0a05795b769642f1989b7545f2e0957c2bf93ca826c2abcdba2",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T12:16:18.341966+00:00",
+    "bridges": {
+      "137": {
+        "amount": 2000000,
+        "bridge_tx": "0xd41a39f82c2b2d6bda1861eab70d1f1836363cdc42de037b30af067f6060efbb",
+        "status": "done"
+      }
+    },
+    "bridge_tx": "0xd41a39f82c2b2d6bda1861eab70d1f1836363cdc42de037b30af067f6060efbb",
+    "trade_results": {
+      "polymarket": {
+        "order_id": "0x70c6abe83bd6a42490d416a1fd0088db44a5bc878073247c976f96c306da30e4",
+        "status": "matched",
+        "order_params": {
+          "salt": 581608734,
+          "maker": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "signer": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "taker": "0x0000000000000000000000000000000000000000",
+          "tokenId": "35933678883102455876134254283504834160806323059381539125704809724269397337318",
+          "makerAmount": "1970000",
+          "takerAmount": "19700000",
+          "expiration": "0",
+          "nonce": "0",
+          "feeRateBps": "0",
+          "side": "BUY",
+          "signatureType": null,
+          "signature": "0xc377ca34d36adfe899030fcf934acbb49d0a6c5007b8e8b738d4f0775c95a2e75928bcfd7134e46a943a0dcb882c3fba30ef78344d00babe252350737a38b2da1b",
+          "neg_risk": false,
+          "market_id": 676846,
+          "price": 0.1,
+          "amount": 19.79,
+          "order_amount": 1.97
+        }
+      }
+    },
+    "transfer_results": {
+      "polymarket": {
+        "tx_hash": "0xe238dbbeabd96d2ac83ae283ad1bfbadb996fa9c044738fa2b3d770acef18070",
+        "success": true,
+        "amount": 5000000
+      }
+    }
+  },
+  {
+    "id": "c9151bcd",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 18.1818,
+      "avg_price": 0.11,
+      "avg_price_cents": 11,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 2,
+          "qty": 18.1818,
+          "avg_price": 0.11,
+          "avg_price_cents": 11,
+          "market_id": 676846,
+          "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.11,
+          "price_cents": 11,
+          "size": 18.1818,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Event anthropic-acquired-2027 not found"
+      }
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "676846",
+        "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318",
+        "spent": 2,
+        "qty": 18.1818
+      }
+    },
+    "status": "trade_failed",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0x213d197de65070963bcaedfb817b69de3c0b9b3f74435fd2b97720f61c5bf9a5",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T12:21:01.215485+00:00",
+    "bridges": {
+      "137": {
+        "amount": 2000000,
+        "bridge_tx": "0x5411a4ef7b941f2aa1057d6d9908312acaf88e5f40c1581ee26d449d0801b563",
+        "status": "done"
+      }
+    },
+    "bridge_tx": "0x5411a4ef7b941f2aa1057d6d9908312acaf88e5f40c1581ee26d449d0801b563",
+    "trade_results": {
+      "polymarket": {
+        "error": "PolyApiException[status_code=400, error_message={'error': 'invalid amounts, the buy orders maker amount supports a max accuracy of 4 decimals, taker amount a max of 2 decimals'}]"
+      }
+    },
+    "trade_retries": 5,
+    "trade_error": "{'polymarket': \"PolyApiException[status_code=400, error_message={'error': 'invalid amounts, the buy orders maker amount supports a max accuracy of 4 decimals, taker amount a max of 2 decimals'}]\"}"
+  },
+  {
+    "id": "ab2e6e9b",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 18.1818,
+      "avg_price": 0.11,
+      "avg_price_cents": 11,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 2,
+          "qty": 18.1818,
+          "avg_price": 0.11,
+          "avg_price_cents": 11,
+          "market_id": 676846,
+          "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.11,
+          "price_cents": 11,
+          "size": 18.1818,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Event anthropic-acquired-2027 not found"
+      }
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "676846",
+        "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318",
+        "spent": 2,
+        "qty": 18.1818
+      }
+    },
+    "status": "trade_failed",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0x363540dbee9ed08615391719986223ac18f3c8501786afe4cd233819eb263d50",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T12:25:08.317348+00:00",
+    "bridges": {
+      "137": {
+        "amount": 2000000,
+        "bridge_tx": "0x8ea6c9703d749992ff9173e18b4049ade5ae403c1e157a833ba6a3a5da4c22ca",
+        "status": "done"
+      }
+    },
+    "bridge_tx": "0x8ea6c9703d749992ff9173e18b4049ade5ae403c1e157a833ba6a3a5da4c22ca",
+    "trade_results": {
+      "polymarket": {
+        "error": "PolyApiException[status_code=400, error_message={'error': 'invalid amounts, the buy orders maker amount supports a max accuracy of 4 decimals, taker amount a max of 2 decimals'}]"
+      }
+    },
+    "trade_retries": 5,
+    "trade_error": "{'polymarket': \"PolyApiException[status_code=400, error_message={'error': 'invalid amounts, the buy orders maker amount supports a max accuracy of 4 decimals, taker amount a max of 2 decimals'}]\"}"
+  },
+  {
+    "id": "02ba3b64",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 18.1818,
+      "avg_price": 0.11,
+      "avg_price_cents": 11,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 2,
+          "qty": 18.1818,
+          "avg_price": 0.11,
+          "avg_price_cents": 11,
+          "market_id": 676846,
+          "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.11,
+          "price_cents": 11,
+          "size": 18.1818,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Event anthropic-acquired-2027 not found"
+      }
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "676846",
+        "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318",
+        "spent": 2,
+        "qty": 18.1818
+      }
+    },
+    "status": "trade_failed",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0xe88fca7a4116f0f03c4304666059cafb9ddce3dfdd5388b31c4937b1091090b8",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T12:29:28.591912+00:00",
+    "bridges": {
+      "137": {
+        "amount": 2000000,
+        "bridge_tx": "0x6a0561fe702349d39cb0eb04c2fe97aa108c935782f8db4ac8c294c002741ea3",
+        "status": "done"
+      }
+    },
+    "bridge_tx": "0x6a0561fe702349d39cb0eb04c2fe97aa108c935782f8db4ac8c294c002741ea3",
+    "trade_results": {
+      "polymarket": {
+        "error": "PolyApiException[status_code=400, error_message={'error': 'invalid amounts, the buy orders maker amount supports a max accuracy of 4 decimals, taker amount a max of 2 decimals'}]"
+      }
+    },
+    "trade_retries": 5,
+    "trade_error": "{'polymarket': \"PolyApiException[status_code=400, error_message={'error': 'invalid amounts, the buy orders maker amount supports a max accuracy of 4 decimals, taker amount a max of 2 decimals'}]\"}"
+  },
+  {
+    "id": "cec60ad8",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 18.1818,
+      "avg_price": 0.11,
+      "avg_price_cents": 11,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 2,
+          "qty": 18.1818,
+          "avg_price": 0.11,
+          "avg_price_cents": 11,
+          "market_id": 676846,
+          "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.11,
+          "price_cents": 11,
+          "size": 18.1818,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Event anthropic-acquired-2027 not found"
+      }
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "676846",
+        "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318",
+        "spent": 2,
+        "qty": 18.1818
+      }
+    },
+    "status": "trade_failed",
+    "approve_tx_hash": "0x13db3ca2536794c90ee9e3880344fd293ee8c62a3413e18aa85421b10d8915e0",
+    "from_chain": 56,
+    "tx_hash": "0x74c5d8beb31b481962f33d58e88603ab2c02871a6ec4ad30e1d018305fa6744e",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T12:44:50.876249+00:00",
+    "bridges": {
+      "137": {
+        "amount": 2000000000000000000,
+        "bridge_tx": "0xf1a03478c79ff841c9ff90c47746cb0683bd94bc67cde0704d511a20b65bfdeb",
+        "status": "done"
+      }
+    },
+    "bridge_tx": "0xf1a03478c79ff841c9ff90c47746cb0683bd94bc67cde0704d511a20b65bfdeb",
+    "trade_results": {
+      "polymarket": {
+        "error": "insufficient USDC.e: 0.0047, min $1"
+      }
+    },
+    "trade_retries": 5,
+    "trade_error": "{'polymarket': 'insufficient USDC.e: 0.0047, min $1'}"
+  },
+  {
+    "id": "1f8bbde4",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 18.1818,
+      "avg_price": 0.11,
+      "avg_price_cents": 11,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 2,
+          "qty": 18.1818,
+          "avg_price": 0.11,
+          "avg_price_cents": 11,
+          "market_id": 676846,
+          "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.11,
+          "price_cents": 11,
+          "size": 18.1818,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Event anthropic-acquired-2027 not found"
+      }
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "676846",
+        "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318",
+        "spent": 2,
+        "qty": 18.1818
+      }
+    },
+    "status": "trade_failed",
+    "approve_tx_hash": "0x65fadfcb5792236e946b8d142a21e5dd398cfec07c78355c8687dd3e39b48dd4",
+    "from_chain": 56,
+    "tx_hash": "0xa1d66d24526debe5525acbc7cf572166e67ba470fa85999167c756828c361b7b",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T12:51:12.425537+00:00",
+    "bridges": {
+      "137": {
+        "amount": 2000000000000000000,
+        "bridge_tx": "0x613dbe71dc11a0069869d616eccbf21583a7f9674591a567fa366858619ae010",
+        "status": "done"
+      }
+    },
+    "bridge_tx": "0x613dbe71dc11a0069869d616eccbf21583a7f9674591a567fa366858619ae010",
+    "trade_results": {
+      "polymarket": {
+        "error": "insufficient USDC.e: 0.0063, min $1"
+      }
+    },
+    "trade_retries": 5,
+    "trade_error": "{'polymarket': 'insufficient USDC.e: 0.0063, min $1'}"
+  },
+  {
+    "id": "c5b177d2",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 18.1818,
+      "avg_price": 0.11,
+      "avg_price_cents": 11,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 2,
+          "qty": 18.1818,
+          "avg_price": 0.11,
+          "avg_price_cents": 11,
+          "market_id": 676846,
+          "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.11,
+          "price_cents": 11,
+          "size": 18.1818,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Event anthropic-acquired-2027 not found"
+      }
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "676846",
+        "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318",
+        "spent": 2,
+        "qty": 18.1818
+      }
+    },
+    "status": "trade_failed",
+    "approve_tx_hash": "0xda9bf5aeac843cb2df9fdb2ea1934a4b0325ea9965f9287ee680c4ae6d7472dc",
+    "from_chain": 56,
+    "tx_hash": "0xaee0257793232a6e0197578a74951c6f9cb95b04ccbe609ec4792c42df67edb1",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T12:53:21.007227+00:00",
+    "bridges": {
+      "137": {
+        "amount": 2000000000000000000,
+        "bridge_tx": "0xc4e3caf7e1b21ae284b72d095fc67e8d0cadcd58a101909f49b4c27ea2f0faab",
+        "status": "done"
+      }
+    },
+    "bridge_tx": "0xc4e3caf7e1b21ae284b72d095fc67e8d0cadcd58a101909f49b4c27ea2f0faab",
+    "trade_results": {
+      "polymarket": {
+        "error": "PolyApiException[status_code=400, error_message={'error': 'invalid amounts, the market buy orders maker amount supports a max accuracy of 2 decimals, taker amount a max of 4 decimals'}]"
+      }
+    },
+    "trade_retries": 5,
+    "trade_error": "{'polymarket': \"PolyApiException[status_code=400, error_message={'error': 'invalid amounts, the market buy orders maker amount supports a max accuracy of 2 decimals, taker amount a max of 4 decimals'}]\"}"
+  },
+  {
+    "id": "b19339ac",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 18.1818,
+      "avg_price": 0.11,
+      "avg_price_cents": 11,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 2,
+          "qty": 18.1818,
+          "avg_price": 0.11,
+          "avg_price_cents": 11,
+          "market_id": 676846,
+          "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.11,
+          "price_cents": 11,
+          "size": 18.1818,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Event anthropic-acquired-2027 not found"
+      }
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "676846",
+        "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318",
+        "spent": 2,
+        "qty": 18.1818
+      }
+    },
+    "status": "failed",
+    "approve_tx_hash": "0xf16345a37f2f45b0774070e675f9e93a87f3d33b584f37c1d63851015a4930e0",
+    "from_chain": 56,
+    "tx_hash": "0x2d84846ec4e2625381e5dfa3ad1e4e181352aa5960f934c6c265798851d7d05a",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T12:55:57.637797+00:00",
+    "bridges": {
+      "137": {
+        "amount": 2000000000000000000,
+        "bridge_tx": "0x5fcff043a9c61eea04e72c0e3dcee2586374b607b75921292ea754aa18fa58f6",
+        "status": "failed"
+      }
+    },
+    "bridge_tx": "0x5fcff043a9c61eea04e72c0e3dcee2586374b607b75921292ea754aa18fa58f6",
+    "error": "one or more bridges failed"
+  },
+  {
+    "id": "b2c43f8d",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 18.1818,
+      "avg_price": 0.11,
+      "avg_price_cents": 11,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 2,
+          "qty": 18.1818,
+          "avg_price": 0.11,
+          "avg_price_cents": 11,
+          "market_id": 676846,
+          "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.11,
+          "price_cents": 11,
+          "size": 18.1818,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Event anthropic-acquired-2027 not found"
+      }
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "676846",
+        "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318",
+        "spent": 2,
+        "qty": 18.1818
+      }
+    },
+    "status": "trade_failed",
+    "approve_tx_hash": "0xd97a3440df643198f712337f05ea52734030f42a2e6a9c3c25f042b704354796",
+    "from_chain": 56,
+    "tx_hash": "0x86551a16d2e3bf8b117b63de156ee3141cc6141917886775fb7f401220b908bc",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T12:59:18.832687+00:00",
+    "bridges": {
+      "137": {
+        "amount": 2000000000000000000,
+        "bridge_tx": "0xb6ef6c3f59ed25e59551dff22a7146920177ad6269cad97a1997f6c259f0dee3",
+        "status": "done"
+      }
+    },
+    "bridge_tx": "0xb6ef6c3f59ed25e59551dff22a7146920177ad6269cad97a1997f6c259f0dee3",
+    "trade_results": {
+      "polymarket": {
+        "error": "insufficient USDC.e: 0.0025, min $1"
+      }
+    },
+    "trade_retries": 5,
+    "trade_error": "{'polymarket': 'insufficient USDC.e: 0.0025, min $1'}"
+  },
+  {
+    "id": "2988c443",
+    "direction": "sell",
+    "buy_order_id": "ab96ddc5",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "yes",
+    "platforms": {
+      "polymarket": {
+        "token_id": "35933678883102455876134254283504834160806323059381539125704809724269397337318",
+        "market_id": "676846"
+      }
+    },
+    "shares_amount": 76450000,
+    "pull_tx": "0xc864b360f2a7c234c3cd879dc500766ceebf149b0cadf6d5c2a3ed80b86306f4",
+    "to_chain": 8453,
+    "status": "completed",
+    "created_at": "2026-02-08T13:03:33.246170+00:00",
+    "trade_results": {
+      "polymarket": {
+        "order_id": "0x7c73e9f0cf5a35f1bc9e860d667c46d691aeba879fce38be0e7890e34c745aea",
+        "status": "matched",
+        "price": 0.09,
+        "amount": 76.45,
+        "balance_before": 2509,
+        "order_params": {
+          "salt": 1559019975,
+          "maker": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "signer": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "taker": "0x0000000000000000000000000000000000000000",
+          "tokenId": "35933678883102455876134254283504834160806323059381539125704809724269397337318",
+          "makerAmount": "76450000",
+          "takerAmount": "6880500",
+          "expiration": "0",
+          "nonce": "0",
+          "feeRateBps": "0",
+          "side": "SELL",
+          "signatureType": null,
+          "signature": "0xdad4e8e7af04c681c850f35d502fb167976baf59bdb31e4e60c47f6e581cf7a94768b2b7da1be3130fbe7d4f016430e3b2382828de79d932ff437fec9f478fc01c",
+          "neg_risk": false,
+          "market_id": 676846,
+          "price": 0.09,
+          "amount": 76.45,
+          "order_amount": 76.45
+        }
+      }
+    },
+    "settle_results": {
+      "done": true,
+      "balance_before": 2509,
+      "balance_after": 6883009,
+      "proceeds": 6880500
+    },
+    "bridge_back_tx": "0x2ada66461b5a703d2ae4e14ee8d86dd72bc0a6e44e2c29cd5353d5e93bc1baa1",
+    "bridge_back_amount": 6880000,
+    "receiving_tx_hash": "0x8103a8e23607a558cf0655062681253165761c6ea0e49e779e07f9138935a6e4",
+    "receiving_chain_id": 8453
+  },
+  {
+    "id": "d194de0b",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "no",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 2.2247,
+      "avg_price": 0.899,
+      "avg_price_cents": 89.9,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "limitless": {
+          "spent": 2,
+          "qty": 2.2247,
+          "avg_price": 0.899,
+          "avg_price_cents": 89.9,
+          "market_id": "anthropic-acquired-before-2027-1764856036744",
+          "token_id": "87475292291687959504267958190561613302128436190203968000448040757242872944136"
+        }
+      },
+      "fills": [
+        {
+          "platform": "limitless",
+          "price": 0.899,
+          "price_cents": 89.9,
+          "size": 2.2247,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Event anthropic-acquired-2027 not found"
+      }
+    },
+    "platforms": {
+      "limitless": {
+        "market_id": "anthropic-acquired-before-2027-1764856036744",
+        "token_id": "87475292291687959504267958190561613302128436190203968000448040757242872944136",
+        "spent": 2,
+        "qty": 2.2247
+      }
+    },
+    "status": "killed",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0x0fd5ba95e27ec87628ec8f2714948534ad5b0305677423d2f7b8441a5f7e2142",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T13:05:06.787251+00:00",
+    "trade_results": {
+      "limitless": {
+        "order_id": "13270b21-ed40-4ff5-84f2-69a09677eddd",
+        "status": "NEW",
+        "price": 0.12,
+        "amount": 2.0
+      }
+    },
+    "trade_retries": 99
+  },
+  {
+    "id": "4e812b2f",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "no",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 2.2247,
+      "avg_price": 0.899,
+      "avg_price_cents": 89.9,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "limitless": {
+          "spent": 2,
+          "qty": 2.2247,
+          "avg_price": 0.899,
+          "avg_price_cents": 89.9,
+          "market_id": "anthropic-acquired-before-2027-1764856036744",
+          "token_id": "87475292291687959504267958190561613302128436190203968000448040757242872944136"
+        }
+      },
+      "fills": [
+        {
+          "platform": "limitless",
+          "price": 0.899,
+          "price_cents": 89.9,
+          "size": 2.2247,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Event anthropic-acquired-2027 not found"
+      }
+    },
+    "platforms": {
+      "limitless": {
+        "market_id": "anthropic-acquired-before-2027-1764856036744",
+        "token_id": "87475292291687959504267958190561613302128436190203968000448040757242872944136",
+        "spent": 2,
+        "qty": 2.2247
+      }
+    },
+    "status": "killed",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0x99a47ffe8ce51bcf0afc97a209a7d190210c605ee8e2078efc1713f8f37e06c8",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T13:06:09.959978+00:00",
+    "trade_results": {
+      "limitless": {
+        "order_id": "c338a644-17e7-4c6f-b559-301c9c327f1c",
+        "status": "NEW",
+        "price": 0.12,
+        "amount": 2.0
+      }
+    },
+    "trade_retries": 99
+  },
+  {
+    "id": "1c8b74d4",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "no",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 2.2247,
+      "avg_price": 0.899,
+      "avg_price_cents": 89.9,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "limitless": {
+          "spent": 2,
+          "qty": 2.2247,
+          "avg_price": 0.899,
+          "avg_price_cents": 89.9,
+          "market_id": "anthropic-acquired-before-2027-1764856036744",
+          "token_id": "87475292291687959504267958190561613302128436190203968000448040757242872944136"
+        }
+      },
+      "fills": [
+        {
+          "platform": "limitless",
+          "price": 0.899,
+          "price_cents": 89.9,
+          "size": 2.2247,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Event anthropic-acquired-2027 not found"
+      }
+    },
+    "platforms": {
+      "limitless": {
+        "market_id": "anthropic-acquired-before-2027-1764856036744",
+        "token_id": "87475292291687959504267958190561613302128436190203968000448040757242872944136",
+        "spent": 2,
+        "qty": 2.2247
+      }
+    },
+    "status": "killed",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0x08db414af269341c3afce59b30bc30d6b57d9e1c96c156aa3251685c72ab7d1f",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T13:10:43.110579+00:00",
+    "trade_results": {
+      "limitless": {
+        "error": "Limitless order failed: 400 {\"message\":\"FOK order must have taker amount equal to 1\"}"
+      }
+    },
+    "trade_retries": 99,
+    "trade_error": "{'limitless': 'Limitless order failed: 400 {\"message\":\"FOK order must have taker amount equal to 1\"}'}"
+  },
+  {
+    "id": "e31c8f2f",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "no",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 2.2247,
+      "avg_price": 0.899,
+      "avg_price_cents": 89.9,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "limitless": {
+          "spent": 2,
+          "qty": 2.2247,
+          "avg_price": 0.899,
+          "avg_price_cents": 89.9,
+          "market_id": "anthropic-acquired-before-2027-1764856036744",
+          "token_id": "87475292291687959504267958190561613302128436190203968000448040757242872944136"
+        }
+      },
+      "fills": [
+        {
+          "platform": "limitless",
+          "price": 0.899,
+          "price_cents": 89.9,
+          "size": 2.2247,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Event anthropic-acquired-2027 not found"
+      }
+    },
+    "platforms": {
+      "limitless": {
+        "market_id": "anthropic-acquired-before-2027-1764856036744",
+        "token_id": "87475292291687959504267958190561613302128436190203968000448040757242872944136",
+        "spent": 2,
+        "qty": 2.2247
+      }
+    },
+    "status": "killed",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0xef6d49fb7daa5bc47a5f2365f818698028b24708b7356410cfd0892062b5944d",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T13:12:53.665036+00:00",
+    "trade_results": {
+      "limitless": {
+        "error": "Limitless order failed: 400 {\"message\":\"FOK order cannot have a price\"}"
+      }
+    },
+    "trade_retries": 99,
+    "trade_error": "{'limitless': 'Limitless order failed: 400 {\"message\":\"FOK order cannot have a price\"}'}"
+  },
+  {
+    "id": "4a714357",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "no",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 2.2247,
+      "avg_price": 0.899,
+      "avg_price_cents": 89.9,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "limitless": {
+          "spent": 2,
+          "qty": 2.2247,
+          "avg_price": 0.899,
+          "avg_price_cents": 89.9,
+          "market_id": "anthropic-acquired-before-2027-1764856036744",
+          "token_id": "87475292291687959504267958190561613302128436190203968000448040757242872944136"
+        }
+      },
+      "fills": [
+        {
+          "platform": "limitless",
+          "price": 0.899,
+          "price_cents": 89.9,
+          "size": 2.2247,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Event anthropic-acquired-2027 not found"
+      }
+    },
+    "platforms": {
+      "limitless": {
+        "market_id": "anthropic-acquired-before-2027-1764856036744",
+        "token_id": "87475292291687959504267958190561613302128436190203968000448040757242872944136",
+        "spent": 2,
+        "qty": 2.2247
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0xf74f96600f6d2b3b311e2e30c0839f7dc2549b506e32f488be4acf2bf1e9b750",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T13:13:45.700277+00:00",
+    "trade_results": {
+      "limitless": {
+        "order_id": "37bd87b3-f787-4691-985e-687f17c36f0f",
+        "status": "MATCHED",
+        "price": 0.12,
+        "amount": 2.0
+      }
+    },
+    "transfer_results": {
+      "limitless": {
+        "tx_hash": "0x12c2c91ac1bd30e5f7b26c6aeac79a00d9733d3f768fc8b7d763ed8017a11faa",
+        "success": true,
+        "amount": 2217196
+      }
+    }
+  },
+  {
+    "id": "7e5a53b8",
+    "direction": "sell",
+    "buy_order_id": "4a714357",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "no",
+    "platforms": {
+      "limitless": {
+        "token_id": "87475292291687959504267958190561613302128436190203968000448040757242872944136",
+        "market_id": "anthropic-acquired-before-2027-1764856036744"
+      }
+    },
+    "shares_amount": 2210000,
+    "pull_tx": "0x4698da06327ae073ee550e2b50dd067e9bb1a27eabc60f483a3f536f20945dd1",
+    "to_chain": 8453,
+    "status": "killed",
+    "created_at": "2026-02-08T13:14:15.505314+00:00",
+    "trade_results": {
+      "limitless": {
+        "error": "order value $0.22 below limitless minimum $1.00"
+      }
+    },
+    "trade_retries": 99,
+    "trade_error": "order value $0.22 below limitless minimum $1.00"
+  },
+  {
+    "id": "310aae3e",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "no",
+    "budget": 7,
+    "route": {
+      "direction": "buy",
+      "budget": 7,
+      "total_spent": 7,
+      "total_qty": 7.7864,
+      "avg_price": 0.899,
+      "avg_price_cents": 89.9,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "limitless": {
+          "spent": 7,
+          "qty": 7.7864,
+          "avg_price": 0.899,
+          "avg_price_cents": 89.9,
+          "market_id": "anthropic-acquired-before-2027-1764856036744",
+          "token_id": "87475292291687959504267958190561613302128436190203968000448040757242872944136"
+        }
+      },
+      "fills": [
+        {
+          "platform": "limitless",
+          "price": 0.899,
+          "price_cents": 89.9,
+          "size": 7.7864,
+          "cost": 7
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Event anthropic-acquired-2027 not found"
+      }
+    },
+    "platforms": {
+      "limitless": {
+        "market_id": "anthropic-acquired-before-2027-1764856036744",
+        "token_id": "87475292291687959504267958190561613302128436190203968000448040757242872944136",
+        "spent": 7,
+        "qty": 7.7864
+      }
+    },
+    "status": "failed",
+    "approve_tx_hash": "0xcfdfd70ff9a1761f756a3a760357581fc80e35a20ef5342a5f8929a6274d219f",
+    "from_chain": 137,
+    "tx_hash": null,
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T13:16:12.839524+00:00",
+    "error": "Transaction HexBytes('0x02aac396566c089f7f49013b06b8c79ea41bcba1c91c69a2aacac8238ee9d82b') is not in the chain after 60 seconds"
+  },
+  {
+    "id": "69494776",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "no",
+    "budget": 7,
+    "route": {
+      "direction": "buy",
+      "budget": 7,
+      "total_spent": 7,
+      "total_qty": 7.7864,
+      "avg_price": 0.899,
+      "avg_price_cents": 89.9,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "limitless": {
+          "spent": 7,
+          "qty": 7.7864,
+          "avg_price": 0.899,
+          "avg_price_cents": 89.9,
+          "market_id": "anthropic-acquired-before-2027-1764856036744",
+          "token_id": "87475292291687959504267958190561613302128436190203968000448040757242872944136"
+        }
+      },
+      "fills": [
+        {
+          "platform": "limitless",
+          "price": 0.899,
+          "price_cents": 89.9,
+          "size": 7.7864,
+          "cost": 7
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Event anthropic-acquired-2027 not found"
+      }
+    },
+    "platforms": {
+      "limitless": {
+        "market_id": "anthropic-acquired-before-2027-1764856036744",
+        "token_id": "87475292291687959504267958190561613302128436190203968000448040757242872944136",
+        "spent": 7,
+        "qty": 7.7864
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": "0x3b5c152559f95bd5f59f25649d38444ab97bf05860bfa3aca71e46b809f84085",
+    "from_chain": 137,
+    "tx_hash": "0x20f2252df05dc20012168b341bb465df60b78de2e53f19a67bf12ee1e06bc38e",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T13:22:00.634024+00:00",
+    "bridges": {
+      "8453": {
+        "amount": 7000000,
+        "bridge_tx": "0x664c2927570707169f8e447eb7e490734d96594b039e842629e9518c9963f9e4",
+        "status": "done"
+      }
+    },
+    "bridge_tx": "0x664c2927570707169f8e447eb7e490734d96594b039e842629e9518c9963f9e4",
+    "trade_results": {
+      "limitless": {
+        "order_id": "625da95a-ff69-4e58-9e09-c029531691a5",
+        "status": "MATCHED",
+        "price": 0.12,
+        "amount": 7.0
+      }
+    },
+    "transfer_results": {
+      "limitless": {
+        "tx_hash": "0x6051637b9b4e732ad8189442287cbb6e0ee7a4393b8920af1cafd6878588a4b6",
+        "success": true,
+        "amount": 9970186
+      }
+    }
+  },
+  {
+    "id": "7dbd6edd",
+    "direction": "sell",
+    "buy_order_id": "4a714357",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "anthropic-acquired-2027",
+    "team": "Anthropic acquired before 2027?",
+    "side": "no",
+    "platforms": {
+      "limitless": {
+        "token_id": "87475292291687959504267958190561613302128436190203968000448040757242872944136",
+        "market_id": "anthropic-acquired-before-2027-1764856036744"
+      }
+    },
+    "shares_amount": 9970000,
+    "pull_tx": "0x1315fc0d6efa966419a84bb0ba1cecab147db1726cb040818a5422c8712b8748",
+    "to_chain": 8453,
+    "status": "completed",
+    "created_at": "2026-02-08T13:23:33.826074+00:00",
+    "trade_results": {
+      "limitless": {
+        "order_id": "838f2001-9235-4456-9362-5d8f0fe1513e",
+        "status": "MATCHED",
+        "price": 0.101,
+        "amount": 9.97,
+        "balance_before": 3955002,
+        "order_params": {}
+      }
+    },
+    "settle_results": {
+      "done": true,
+      "balance_before": 3955002,
+      "balance_after": 12692710,
+      "proceeds": 8737708
+    },
+    "bridge_back_tx": "0xa4195e133b4b9bda3d481a8b3c7f6da3f68b1176480f963d58a59e6adcd07908",
+    "bridge_back_amount": 8737708
   }
 ]

@@ -241,21 +241,22 @@ class PolymarketAdapter(BaseAdapter):
         options = PartialCreateOrderOptions(neg_risk=neg_risk)
 
         import math
+        # FOK: maker(USDC) max 2dp, taker(shares) max 4dp
+        # create_market_order BUY: amount=USDC → maker=round_down(amount,2dp), taker=amount/price→4dp
         if side.upper() == "BUY":
-            # Floor to 2 decimals — USDC cents, avoid exceeding balance
-            order_amount = math.floor(float(Decimal(str(amount)) * Decimal(str(price))) * 100) / 100
+            usdc_amount = math.floor(float(amount) * float(price) * 100) / 100  # USDC 2dp
         else:
-            order_amount = math.floor(amount * 100) / 100
+            usdc_amount = math.floor(float(amount) * 100) / 100  # shares 2dp
 
         order_args = MarketOrderArgs(
             token_id=token_id,
-            amount=order_amount,
+            amount=usdc_amount,
             price=price,
             side=BUY if side.upper() == "BUY" else SELL,
             order_type=OrderType.FOK,
         )
 
-        logger.info(f"Market Order (FOK): side={side.upper()}, price={price}, amount={order_amount}, neg_risk={neg_risk}")
+        logger.info(f"Order (FOK): side={side.upper()}, price={price}, amount={usdc_amount}, neg_risk={neg_risk}")
         logger.info(f"Token: {token_id[:40]}...")
 
         signed_order = client.create_market_order(order_args, options=options)
@@ -286,7 +287,7 @@ class PolymarketAdapter(BaseAdapter):
             "market_id": market_id,
             "price": price,
             "amount": amount,
-            "order_amount": order_amount,
+            "order_amount": usdc_amount,
         }
         return response
 

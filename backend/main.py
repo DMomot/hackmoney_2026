@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 
 # --- Web3 setup for relay ---
-BASE_RPC = "https://mainnet.base.org"
+BASE_RPC = os.getenv("BASE_RPC", "https://mainnet.base.org")
 w3 = Web3(Web3.HTTPProvider(BASE_RPC))
 OWNER_KEY = os.getenv("OWNER_PRIVATE_KEY", "")
 OWNER_ACCOUNT = Account.from_key(OWNER_KEY) if OWNER_KEY else None
@@ -54,7 +54,8 @@ CHAIN_STABLE = {8453: USDC_BASE, 137: USDC_POLYGON, 56: USDT_BSC}
 CHAIN_DECIMALS = {8453: 6, 137: 6, 56: 18}
 
 # --- Polymarket trading adapter (relayer uses OWNER key) ---
-POLYGON_RPC = "https://polygon-bor-rpc.publicnode.com"
+POLYGON_RPC = os.getenv("POLYGON_RPC", "https://polygon-bor-rpc.publicnode.com")
+BSC_RPC = os.getenv("BSC_RPC", "https://bsc-rpc.publicnode.com")
 RELAYER_KEY = OWNER_KEY  # relayer = owner of router
 _poly_adapter = None
 
@@ -332,6 +333,44 @@ async def route(
     return result
 
 
+@app.post("/api/test_batch_route")
+async def test_batch_route(body: dict = Body(...)):
+    """Split budget 50/50 between Polymarket and Limitless. Buy what's available."""
+    budget = body.get("budget", 6)
+    event_id = body.get("event_id", "anthropic-acquired-2027")
+    team = body.get("team", "Anthropic acquired before 2027?")
+    side = body.get("side", "yes")
+    half = budget / 2
+
+    per_platform = {}
+    for pname in ["polymarket", "limitless"]:
+        adapter = ADAPTERS.get(pname)
+        if not adapter:
+            continue
+        try:
+            book = await adapter.get_orderbook(event_id, team, side)
+            r = find_optimal_route([book], half, "buy")
+            if "error" not in r and r.get("per_platform"):
+                per_platform[pname] = r["per_platform"][pname]
+        except Exception as e:
+            per_platform[pname] = {"error": str(e)}
+
+    total_spent = sum(p.get("spent", 0) for p in per_platform.values() if "error" not in p)
+    total_qty = sum(p.get("qty", 0) for p in per_platform.values() if "error" not in p)
+    return {
+        "direction": "buy",
+        "budget": budget,
+        "total_spent": round(total_spent, 4),
+        "total_qty": round(total_qty, 4),
+        "avg_price": round(total_spent / total_qty, 6) if total_qty > 0 else 0,
+        "avg_price_cents": round(total_spent / total_qty * 100, 2) if total_qty > 0 else 0,
+        "unfilled": round(budget - total_spent, 4),
+        "platforms_used": len([p for p in per_platform.values() if "error" not in p]),
+        "per_platform": per_platform,
+        "fills": [],
+    }
+
+
 # ---- Order API ----
 
 @app.post("/api/order")
@@ -400,7 +439,7 @@ async def create_order(body: dict = Body(...)):
 
         # Connect to source chain
         from web3 import Web3 as W3
-        chain_rpcs = {8453: BASE_RPC, 137: POLYGON_RPC, 56: os.getenv("BSC_RPC", "https://bsc-rpc.publicnode.com")}
+        chain_rpcs = {8453: BASE_RPC, 137: POLYGON_RPC, 56: BSC_RPC}
         src_w3 = W3(W3.HTTPProvider(chain_rpcs.get(from_chain, BASE_RPC)))
 
         # Step 1: Pull ALL funds from user via Router.transferERC20
@@ -413,7 +452,7 @@ async def create_order(body: dict = Body(...)):
         }))
         nonce = src_w3.eth.get_transaction_count(OWNER_ACCOUNT.address, "pending")
         gas_price = src_w3.eth.gas_price
-        pull_gas = {"maxFeePerGas": gas_price * 2, "maxPriorityFeePerGas": src_w3.eth.max_priority_fee} if from_chain == 8453 else {"gasPrice": gas_price}
+        pull_gas = {"maxFeePerGas": gas_price * 2, "maxPriorityFeePerGas": src_w3.eth.max_priority_fee} if from_chain == 8453 else {"gasPrice": int(gas_price * 1.5)}
         pull_tx = src_router.functions.transferERC20(
             W3.to_checksum_address(from_token), user_addr, pid, amount_raw, metadata,
         ).build_transaction({
@@ -448,7 +487,7 @@ async def create_order(body: dict = Body(...)):
                     "fromChain": from_chain, "toChain": target_chain,
                     "fromToken": from_token, "toToken": to_token,
                     "fromAmount": str(bridge_amount), "fromAddress": relayer_addr,
-                    "toAddress": to_addr, "slippage": "0.05", "integrator": "premarket-router",
+                    "toAddress": to_addr, "slippage": "0.50", "integrator": "premarket-router",
                 }, timeout=15)
                 lifi_quote = lifi_resp.json()
                 if "transactionRequest" not in lifi_quote:
@@ -476,7 +515,7 @@ async def create_order(body: dict = Body(...)):
                 br_tx = {
                     "from": relayer_addr, "to": lifi_diamond, "data": lifi_tx_req["data"],
                     "value": int(lifi_tx_req.get("value", "0"), 16) if isinstance(lifi_tx_req.get("value"), str) else int(lifi_tx_req.get("value", 0)),
-                    "nonce": nonce, "gas": lifi_gas, "gasPrice": gas_price, "chainId": from_chain,
+                    "nonce": nonce, "gas": lifi_gas, "gasPrice": int(gas_price * 1.5), "chainId": from_chain,
                 }
                 signed_b = Account.from_key(RELAYER_KEY).sign_transaction(br_tx)
                 bh = src_w3.eth.send_raw_transaction(signed_b.raw_transaction)
@@ -664,7 +703,7 @@ async def create_sell(body: dict = Body(...)):
         # Pull shares from user via Router.transferERC1155
         try:
             from web3 import Web3 as W3
-            chain_rpcs = {8453: BASE_RPC, 137: POLYGON_RPC, 56: "https://bsc-dataseed.binance.org"}
+            chain_rpcs = {8453: BASE_RPC, 137: POLYGON_RPC, 56: BSC_RPC}
             chain_w3 = W3(W3.HTTPProvider(chain_rpcs.get(chain_id, BASE_RPC)))
             router = chain_w3.eth.contract(address=operator, abi=ROUTER_ABI)
             pid = PLATFORM_ROUTER_ID.get(platform, 0)
@@ -752,14 +791,15 @@ def _execute_trades(order: dict) -> dict:
                     results[pname] = {"error": f"insufficient USDC.e: {actual_balance:.4f}, min $1"}
                     continue
                 logger.info(f"Order {order['id']}: budget={spent}, actual USDC.e={actual_balance:.4f}, using={actual_spent:.2f}")
-                # Get best ask price for this token
+                # Get best ask price
                 best = adapter.get_best_offer(token_id, "BUY")
                 price = best["price"]
                 if price <= 0:
                     results[pname] = {"error": "no asks available"}
                     continue
-                # amount = shares to buy (floor to avoid rounding over balance)
+                # amount = shares to buy (FOK sweeps across levels)
                 amount = math.floor((actual_spent / price) * 100) / 100
+                logger.info(f"Order {order['id']}: {pname} amount={amount} shares @ {price}")
                 resp = adapter.place_order(
                     token_id=token_id,
                     market_id=int(market_id) if market_id else 0,
@@ -1058,7 +1098,7 @@ def _bridge_back(order: dict) -> dict:
                 w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
             else:
                 from web3 import Web3 as W3
-                rpc_map = {137: POLYGON_RPC, 56: "https://bsc-dataseed.binance.org"}
+                rpc_map = {137: POLYGON_RPC, 56: BSC_RPC}
                 W3(W3.HTTPProvider(rpc_map.get(from_chain, POLYGON_RPC))).eth.wait_for_transaction_receipt(tx_hash, timeout=60)
             logger.info(f"Sell {order['id']}: same-chain transfer {proceeds/(10**decimals):.4f} to user on chain {from_chain}, tx={tx_hash}")
             return {"bridge_tx": tx_hash, "amount": proceeds}
@@ -1089,7 +1129,7 @@ def _bridge_back(order: dict) -> dict:
             return {"error": f"insufficient balance for fallback: have {actual_bal/(10**decimals):.4f}, need {proceeds/(10**decimals):.4f}"}
         try:
             tx_hash = adapter.transfer_usdt_to_user(user_addr, proceeds)
-            rpc_map = {137: POLYGON_RPC, 56: "https://bsc-dataseed.binance.org", 8453: BASE_RPC}
+            rpc_map = {137: POLYGON_RPC, 56: BSC_RPC, 8453: BASE_RPC}
             from web3 import Web3 as W3
             _w = W3(W3.HTTPProvider(rpc_map.get(from_chain, POLYGON_RPC)))
             _w.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
@@ -1121,7 +1161,7 @@ def _bridge_back(order: dict) -> dict:
 
         # Connect to source chain
         from web3 import Web3 as W3
-        rpc_map = {8453: BASE_RPC, 137: POLYGON_RPC, 56: "https://bsc-dataseed.binance.org"}
+        rpc_map = {8453: BASE_RPC, 137: POLYGON_RPC, 56: BSC_RPC}
         w3_src = W3(W3.HTTPProvider(rpc_map.get(from_chain, BASE_RPC)))
         if from_chain == 137:
             from web3.middleware import ExtraDataToPOAMiddleware

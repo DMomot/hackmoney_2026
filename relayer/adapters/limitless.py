@@ -98,11 +98,11 @@ class LimitlessAdapter(BaseAdapter):
     # Exchange contract on Base (from API error response)
     CTF_EXCHANGE = "0x5a38afc17F7E97ad8d6C547ddb837E40B4aEDfC6"
 
-    def _sign_order_eip712(self, order_data: dict) -> str:
+    def _sign_order_eip712(self, order_data: dict, exchange_address: str = None) -> str:
         """Sign order using EIP-712 with Limitless exchange contract."""
         from eth_account.messages import encode_typed_data
 
-        contract = self.CTF_EXCHANGE
+        contract = exchange_address or self.CTF_EXCHANGE
         domain = {
             "name": "Limitless CTF Exchange",
             "version": "1",
@@ -144,17 +144,42 @@ class LimitlessAdapter(BaseAdapter):
         tokens = market.get("tokens", {})
         real_token_id = str(tokens.get("yes") if str(tokens.get("yes")) == str(token_id) else tokens.get("no"))
 
+        # Get exchange address for this market (nested in venue.exchange)
+        venue = market.get("venue") or {}
+        exchange_addr = venue.get("exchange") or self.CTF_EXCHANGE
+        logger.info(f"Limitless market {market_slug}: exchange={exchange_addr}")
+
+        # Ensure approvals for this exchange contract
+        if exchange_addr.lower() != self.CTF_EXCHANGE.lower():
+            try:
+                allowance = self.check_erc20_approval(self.account.address, exchange_addr)
+                if allowance <= 0:
+                    self.set_erc20_approval(self.account.address, exchange_addr)
+                    logger.info(f"Approved USDC for exchange {exchange_addr}")
+            except Exception as e:
+                logger.warning(f"Failed to approve exchange {exchange_addr}: {e}")
+
         salt = random.randint(1, 2**32 - 1)
+
+        is_fok = True  # Using FOK orders
 
         if side_int == 0:  # BUY: amount = USDC to spend
             usdc_raw = int(amount * 1e6)
-            shares_raw = int((amount / price) * 1e6)
-            maker_amount, taker_amount = usdc_raw, shares_raw
-        else:  # SELL: amount = shares to sell (human-readable)
+            if is_fok:
+                maker_amount, taker_amount = usdc_raw, 1
+            else:
+                shares_raw = int((amount / price) * 1e6)
+                shares_raw = (shares_raw // 1000) * 1000
+                usdc_raw = int(shares_raw * price)
+                maker_amount, taker_amount = usdc_raw, shares_raw
+        else:  # SELL: amount = shares to sell
             raw_shares = (int(amount * 1e6) // 1000) * 1000
-            maker_amount = raw_shares
-            taker_amount = int(raw_shares * price)
-            logger.info(f"SELL amounts: shares={maker_amount}, usdc={taker_amount}")
+            if is_fok:
+                maker_amount, taker_amount = raw_shares, 1
+            else:
+                maker_amount = raw_shares
+                taker_amount = int(raw_shares * price)
+            logger.info(f"SELL amounts: shares={maker_amount}, taker={taker_amount}")
 
         order_data = {
             "salt": salt, "maker": self.account.address, "signer": self.account.address,
@@ -163,7 +188,7 @@ class LimitlessAdapter(BaseAdapter):
             "takerAmount": taker_amount, "expiration": 0, "nonce": 0,
             "feeRateBps": 300, "side": side_int, "signatureType": 0,
         }
-        signature = self._sign_order_eip712(order_data)
+        signature = self._sign_order_eip712(order_data, exchange_addr)
 
         payload = {
             "order": {
@@ -172,9 +197,9 @@ class LimitlessAdapter(BaseAdapter):
                 "tokenId": real_token_id, "makerAmount": maker_amount,
                 "takerAmount": taker_amount, "expiration": "0", "nonce": 0,
                 "feeRateBps": 300, "side": side_int, "signature": signature,
-                "signatureType": 0, "price": price,
+                "signatureType": 0,
             },
-            "ownerId": self._owner_id, "orderType": "GTC", "marketSlug": market_slug,
+            "ownerId": self._owner_id, "orderType": "FOK", "marketSlug": market_slug,
         }
 
         logger.info(f"Limitless {side} {amount} @ {price}, slug={market_slug}")
