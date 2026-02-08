@@ -6025,7 +6025,7 @@
     "shares_amount": 63500000,
     "pull_tx": "0xcb764c5f5aa05e3c511d52481d138d8f8fa1b1d3e45083e49a7d65597edd8d02",
     "to_chain": 56,
-    "status": "sell_settled",
+    "status": "killed",
     "created_at": "2026-02-08T15:56:11.184074+00:00",
     "trade_results": {
       "polymarket": {
@@ -6061,6 +6061,103 @@
       "balance_before": 10659,
       "balance_after": 8265659,
       "proceeds": 8255000
+    },
+    "bridge_back_tx": "0xf90ed17ff3b322f945af01002ed47f342d6494d1c7ba2b22902ae2a8251cc002",
+    "bridge_back_amount": 8250000,
+    "trade_retries": 99,
+    "bridge_retries": 99
+  },
+  {
+    "id": "dd14b23d",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "England",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 14.2857,
+      "avg_price": 0.14,
+      "avg_price_cents": 14,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 2,
+          "qty": 14.2857,
+          "avg_price": 0.14,
+          "avg_price_cents": 14,
+          "market_id": 558935,
+          "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.14,
+          "price_cents": 14,
+          "size": 14.2857,
+          "cost": 2
+        }
+      ]
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "558935",
+        "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+        "spent": 2,
+        "qty": 14.2857
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": "0x500f862d6ec42a91bdf6542eb5538ca64dcac083c30ab324346906aa00d564bb",
+    "from_chain": 56,
+    "tx_hash": "0x32d0eb70fd8117ed5c0ec8a54b883ec53f86a142ae72a6bdd47a7e4e5d12997a",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T16:06:50.101707+00:00",
+    "bridges": {
+      "137": {
+        "amount": 2000000000000000000,
+        "bridge_tx": "0xb4ee7705be430ad1dd641f79acfafc7b190c011cc89f7f4b04dd9c24e3beb387",
+        "status": "done"
+      }
+    },
+    "bridge_tx": "0xb4ee7705be430ad1dd641f79acfafc7b190c011cc89f7f4b04dd9c24e3beb387",
+    "trade_results": {
+      "polymarket": {
+        "order_id": "0xd5b452334508a38bd9520f71d0ab204f4abcf18d506f041f2545b9b82279008d",
+        "status": "matched",
+        "order_params": {
+          "salt": 1083324559,
+          "maker": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "signer": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "taker": "0x0000000000000000000000000000000000000000",
+          "tokenId": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+          "makerAmount": "1970000",
+          "takerAmount": "14071400",
+          "expiration": "0",
+          "nonce": "0",
+          "feeRateBps": "0",
+          "side": "BUY",
+          "signatureType": null,
+          "signature": "0x2b4d12fdaa7b473261eb93e9bfb6f600320e749a27d5cfc75961cff8902921af10c0823a404f7a99b4065431620e7f003158c7070d29c042d3fdf6311e2f5caa1b",
+          "neg_risk": true,
+          "market_id": 558935,
+          "price": 0.14,
+          "amount": 14.14,
+          "order_amount": 1.97
+        }
+      }
+    },
+    "transfer_results": {
+      "polymarket": {
+        "tx_hash": "0x1baa99072456a9cf6af6517ada2897900dd3cd441f47bda63de06bac4bdd8e1c",
+        "success": true,
+        "amount": 14071427
+      }
     }
   }
 ]
