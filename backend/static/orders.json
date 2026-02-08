@@ -78,7 +78,7 @@
         "qty": 12.8205
       }
     },
-    "status": "trade_failed",
+    "status": "filled",
     "approve_tx_hash": "0xbc7de30cb04d327e9df1cf481aed1450dc8e2738ec776a838fb946991f4aac05",
     "tx_hash": "0xe4607e71a1ec1d6ee9a23a0c9e5784d3e6cec75c3bd83da85c829cf777961605",
     "receiving_tx_hash": "0xdb2a9424b1c7cdb2fa51463378645cf673f937423a089376cd0568beb241db61",
@@ -86,7 +86,19 @@
     "created_at": "2026-02-07T16:08:58.565181+00:00",
     "trade_results": {
       "opinion": {
-        "error": "adapter not implemented"
+        "order_id": "0ebaa56e-048a-11f1-8190-0a58a9feac02",
+        "status": "NEW",
+        "price": 0.156,
+        "amount": 2.0
+      }
+    },
+    "trade_retries": 1,
+    "trade_error": "{'opinion': 'insufficient USDT: 0.1689, min $1'}",
+    "transfer_results": {
+      "opinion": {
+        "tx_hash": "kept_on_smart_wallet",
+        "success": true,
+        "amount": 9614871794871796920
       }
     }
   },
@@ -268,9 +280,11 @@
     "created_at": "2026-02-07T19:47:02.980476+00:00",
     "trade_results": {
       "opinion": {
-        "error": "adapter not implemented"
+        "error": "insufficient USDT: 0.1537, min $1"
       }
-    }
+    },
+    "trade_retries": 5,
+    "trade_error": "{'opinion': 'insufficient USDT: 0.1537, min $1'}"
   },
   {
     "id": "17dc3689",
@@ -627,9 +641,11 @@
     "created_at": "2026-02-07T20:32:29.845095+00:00",
     "trade_results": {
       "polymarket": {
-        "error": "PolyApiException[status_code=400, error_message={'error': 'not enough balance / allowance'}]"
+        "error": "insufficient USDC.e: 0.0108, min $1"
       }
-    }
+    },
+    "trade_retries": 5,
+    "trade_error": "{'polymarket': 'insufficient USDC.e: 0.0108, min $1'}"
   },
   {
     "id": "2efcbd5c",
@@ -683,9 +699,11 @@
     "created_at": "2026-02-07T20:35:14.584966+00:00",
     "trade_results": {
       "polymarket": {
-        "error": "PolyApiException[status_code=400, error_message={'error': 'not enough balance / allowance'}]"
+        "error": "insufficient USDC.e: 0.0108, min $1"
       }
-    }
+    },
+    "trade_retries": 5,
+    "trade_error": "{'polymarket': 'insufficient USDC.e: 0.0108, min $1'}"
   },
   {
     "id": "1361626e",
@@ -1442,9 +1460,11 @@
     "created_at": "2026-02-07T23:50:19.031304+00:00",
     "trade_results": {
       "limitless": {
-        "error": "Event loop is closed"
+        "error": "insufficient USDC: 0.7583, min $1"
       }
-    }
+    },
+    "trade_retries": 5,
+    "trade_error": "{'limitless': 'insufficient USDC: 0.7583, min $1'}"
   },
   {
     "id": "0bb47799",
@@ -1501,9 +1521,11 @@
     "created_at": "2026-02-07T23:55:47.910885+00:00",
     "trade_results": {
       "limitless": {
-        "error": "Event loop is closed"
+        "error": "insufficient USDC: 0.7583, min $1"
       }
-    }
+    },
+    "trade_retries": 5,
+    "trade_error": "{'limitless': 'insufficient USDC: 0.7583, min $1'}"
   },
   {
     "id": "494a407e",
@@ -1560,9 +1582,11 @@
     "created_at": "2026-02-08T00:01:36.982565+00:00",
     "trade_results": {
       "limitless": {
-        "error": "Event loop is closed"
+        "error": "insufficient USDC: 0.7583, min $1"
       }
-    }
+    },
+    "trade_retries": 5,
+    "trade_error": "{'limitless': 'insufficient USDC: 0.7583, min $1'}"
   },
   {
     "id": "31d52da7",
@@ -1619,9 +1643,11 @@
     "created_at": "2026-02-08T00:03:08.513568+00:00",
     "trade_results": {
       "limitless": {
-        "error": "Event loop is closed"
+        "error": "insufficient USDC: 0.7583, min $1"
       }
-    }
+    },
+    "trade_retries": 5,
+    "trade_error": "{'limitless': 'insufficient USDC: 0.7583, min $1'}"
   },
   {
     "id": "217b156c",
@@ -1712,10 +1738,11 @@
     "created_at": "2026-02-08T00:08:34.500536+00:00",
     "trade_results": {
       "limitless": {
-        "error": "Limitless order failed: 400 {\"message\":\"Insufficient conditional token balance for this order.\"}"
+        "error": "order value $0.48 below limitless minimum $1.00"
       }
     },
-    "trade_error": "Limitless order failed: 400 {\"message\":\"Insufficient conditional token balance for this order.\"}"
+    "trade_error": "order value $0.48 below limitless minimum $1.00",
+    "trade_retries": 5
   },
   {
     "id": "ba6bfc1b",
@@ -2015,10 +2042,11 @@
     "created_at": "2026-02-08T00:22:57.461790+00:00",
     "trade_results": {
       "opinion": {
-        "error": "Opinion order failed: Order value 1.27 USDT is below the minimum required value of 1.30 USDT"
+        "error": "order value $1.27 below opinion minimum $1.30"
       }
     },
-    "trade_error": "Opinion order failed: Order value 1.27 USDT is below the minimum required value of 1.30 USDT"
+    "trade_error": "order value $1.27 below opinion minimum $1.30",
+    "trade_retries": 5
   },
   {
     "id": "485680ab",
@@ -2108,10 +2136,11 @@
     "created_at": "2026-02-08T00:43:59.732717+00:00",
     "trade_results": {
       "opinion": {
-        "error": "Opinion order failed: Insufficient token balance: 17.8 required, but only 0 available"
+        "error": "Opinion order failed: Insufficient token balance: 17.8 required, but only 9.61487179487179692 available"
       }
     },
-    "trade_error": "Opinion order failed: Insufficient token balance: 17.8 required, but only 0 available"
+    "trade_error": "Opinion order failed: Insufficient token balance: 17.8 required, but only 9.61487179487179692 available",
+    "trade_retries": 5
   },
   {
     "id": "c78b0131",
@@ -2304,13 +2333,479 @@
     "shares_amount": 16030000000000002048,
     "pull_tx": "0x545e45a191924c837f9a8379403ab3eb8a228af4e832010f527c22b6e2645e21",
     "to_chain": 8453,
-    "status": "trade_failed",
+    "status": "killed",
     "created_at": "2026-02-08T00:53:39.656223+00:00",
     "trade_results": {
       "opinion": {
-        "error": "Opinion order failed: Insufficient token balance: 16.03 required, but only 0 available"
+        "order_id": "081b7cf9-048a-11f1-a754-0a58a9feac02",
+        "status": "NEW",
+        "price": 0.155,
+        "amount": 16.03,
+        "balance_before": 168926982170949495,
+        "order_params": {}
       }
     },
-    "trade_error": "Opinion order failed: Insufficient token balance: 16.03 required, but only 0 available"
+    "trade_error": "Opinion order failed: Insufficient token balance: 16.03 required, but only 0 available",
+    "settle_retries": 5,
+    "settle_results": {
+      "done": true,
+      "balance_before": 168926982170949495,
+      "balance_after": 1143206982170949495,
+      "proceeds": 974280000000000000
+    },
+    "bridge_retries": 99,
+    "bridge_error": "amount too small to bridge: 0.9700",
+    "bridge_back_tx": "0xe6e3469f3b87bbdfc2223fc189edc3c87ce49227166fae9cc6e7712e31a646e2",
+    "bridge_back_amount": 974280000000000000,
+    "trade_retries": 99
+  },
+  {
+    "id": "0bb580e2",
+    "direction": "sell",
+    "buy_order_id": "cd2bb036",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "platforms": {
+      "opinion": {
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "market_id": "1354"
+      }
+    },
+    "shares_amount": 9610000000000000000,
+    "pull_tx": "skipped_opinion",
+    "to_chain": 8453,
+    "status": "killed",
+    "created_at": "2026-02-08T01:10:40.769584+00:00",
+    "trade_results": {
+      "opinion": {
+        "order_id": "1ace3d25-048b-11f1-810e-0a58a9feac02",
+        "status": "NEW",
+        "price": 0.155,
+        "amount": 9.61,
+        "balance_before": 153656982170949495,
+        "order_params": {}
+      }
+    },
+    "settle_results": {
+      "done": true,
+      "balance_before": 153656982170949495,
+      "balance_after": 1143206982170949495,
+      "proceeds": 989550000000000000
+    },
+    "bridge_retries": 99,
+    "bridge_error": "insufficient balance for fallback: have 0.2163, need 0.9896",
+    "bridge_back_tx": "0xda11aed4d335771ec709eed449a366e0dd80d99dcf08b7b6c868749908b95dfa",
+    "bridge_back_amount": 989550000000000000,
+    "trade_retries": 99
+  },
+  {
+    "id": "e8abfdeb",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "budget": 3,
+    "route": {
+      "direction": "buy",
+      "budget": 3,
+      "total_spent": 3,
+      "total_qty": 19.2308,
+      "avg_price": 0.156,
+      "avg_price_cents": 15.6,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "opinion": {
+          "spent": 3,
+          "qty": 19.2308,
+          "avg_price": 0.156,
+          "avg_price_cents": 15.6,
+          "market_id": 1354,
+          "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488"
+        }
+      },
+      "fills": [
+        {
+          "platform": "opinion",
+          "price": 0.156,
+          "price_cents": 15.6,
+          "size": 19.2308,
+          "cost": 3
+        }
+      ]
+    },
+    "platforms": {
+      "opinion": {
+        "market_id": "1354",
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "spent": 3,
+        "qty": 19.2308
+      }
+    },
+    "status": "trade_failed",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0xd25f0b0e1f259edd72ef0a66288353ef2d1adc59c56baa036c8d19b7b2cf40b0",
+    "receiving_tx_hash": "0x326cd522238e8850c4ea9589659bcaf6e5f3e7b0dfe513c3909b9eebfcdb5ad3",
+    "receiving_chain_id": 56,
+    "created_at": "2026-02-08T01:13:29.874789+00:00",
+    "trade_results": {
+      "opinion": {
+        "error": "insufficient USDT: 0.2163, min $1"
+      }
+    },
+    "trade_retries": 5,
+    "trade_error": "{'opinion': 'insufficient USDT: 0.2163, min $1'}"
+  },
+  {
+    "id": "df065483",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "budget": 3,
+    "route": {
+      "direction": "buy",
+      "budget": 3,
+      "total_spent": 3,
+      "total_qty": 19.2308,
+      "avg_price": 0.156,
+      "avg_price_cents": 15.6,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "opinion": {
+          "spent": 3,
+          "qty": 19.2308,
+          "avg_price": 0.156,
+          "avg_price_cents": 15.6,
+          "market_id": 1354,
+          "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488"
+        }
+      },
+      "fills": [
+        {
+          "platform": "opinion",
+          "price": 0.156,
+          "price_cents": 15.6,
+          "size": 19.2308,
+          "cost": 3
+        }
+      ]
+    },
+    "platforms": {
+      "opinion": {
+        "market_id": "1354",
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "spent": 3,
+        "qty": 19.2308
+      }
+    },
+    "status": "killed",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0xd6f6bd10c038ab3cd5207fac16211d65b78aefb520a6a0aa3d03e43775a2bdf8",
+    "receiving_tx_hash": "0x5f8030191d53ef87894fd81335303f2a249755a43526e33ed6ad4fce4326b2e2",
+    "receiving_chain_id": 56,
+    "created_at": "2026-02-08T01:20:43.324747+00:00",
+    "trade_results": {
+      "opinion": {
+        "error": "Opinion order failed: Order value 1.22 USDT is below the minimum required value of 1.30 USDT"
+      }
+    },
+    "trade_retries": 99,
+    "trade_error": "{'opinion': 'Opinion order failed: Order value 1.22 USDT is below the minimum required value of 1.30 USDT'}",
+    "bridge_retries": 99
+  },
+  {
+    "id": "3928fcf1",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "budget": 3,
+    "route": {
+      "direction": "buy",
+      "budget": 3,
+      "total_spent": 3,
+      "total_qty": 19.2308,
+      "avg_price": 0.156,
+      "avg_price_cents": 15.6,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "opinion": {
+          "spent": 3,
+          "qty": 19.2308,
+          "avg_price": 0.156,
+          "avg_price_cents": 15.6,
+          "market_id": 1354,
+          "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488"
+        }
+      },
+      "fills": [
+        {
+          "platform": "opinion",
+          "price": 0.156,
+          "price_cents": 15.6,
+          "size": 19.2308,
+          "cost": 3
+        }
+      ]
+    },
+    "platforms": {
+      "opinion": {
+        "market_id": "1354",
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "spent": 3,
+        "qty": 19.2308
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0x698ba2629f958b8ef6db272bdeaddc2aff9ba1af05f1f7fe955f4abfcc053fb6",
+    "receiving_tx_hash": "0x5970e30e12a1d3abbb1568afcbabd9e8fe3e15978c8a4a4902c3584747272db4",
+    "receiving_chain_id": 56,
+    "created_at": "2026-02-08T01:25:33.787574+00:00",
+    "trade_results": {
+      "opinion": {
+        "order_id": "2d4539b3-048d-11f1-92c4-0a58a9feac02",
+        "status": "NEW",
+        "price": 0.156,
+        "amount": 3.0
+      }
+    },
+    "transfer_results": {
+      "opinion": {
+        "tx_hash": "kept_on_smart_wallet",
+        "success": true,
+        "amount": 16029743589743591792
+      }
+    }
+  },
+  {
+    "id": "c48a7e89",
+    "direction": "sell",
+    "buy_order_id": "cd2bb036",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "platforms": {
+      "opinion": {
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "market_id": "1354"
+      }
+    },
+    "shares_amount": 16020000000000000000,
+    "pull_tx": "skipped_opinion",
+    "to_chain": 8453,
+    "status": "completed",
+    "created_at": "2026-02-08T01:26:47.896863+00:00",
+    "trade_results": {
+      "opinion": {
+        "order_id": "433c5d8e-048d-11f1-8e4b-0a58a9feac02",
+        "status": "NEW",
+        "price": 0.155,
+        "amount": 16.02,
+        "balance_before": 1208450974871924154,
+        "order_params": {}
+      }
+    },
+    "settle_results": {
+      "done": true,
+      "balance_before": 1208450974871924154,
+      "balance_after": 3191550974871924154,
+      "proceeds": 1983100000000000000
+    },
+    "bridge_back_tx": "0xe2c777e897270c6439301f08e7c9681d47a22f060993f10cd19f3fdfdb084587",
+    "bridge_back_amount": 1980000000000000000,
+    "receiving_tx_hash": "0x96ac80f0ea65a459b566580bf9046f7fc8987fd8673a9218c8bc4fc10f60d1a6",
+    "receiving_chain_id": 8453
+  },
+  {
+    "id": "7b5133b1",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "England",
+    "side": "yes",
+    "budget": 3,
+    "route": {
+      "direction": "buy",
+      "budget": 3,
+      "total_spent": 3,
+      "total_qty": 21.4286,
+      "avg_price": 0.14,
+      "avg_price_cents": 14,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 3,
+          "qty": 21.4286,
+          "avg_price": 0.14,
+          "avg_price_cents": 14,
+          "market_id": 558935,
+          "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.14,
+          "price_cents": 14,
+          "size": 21.4286,
+          "cost": 3
+        }
+      ]
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "558935",
+        "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+        "spent": 3,
+        "qty": 21.4286
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0xeb742eaca32e9e93d59620515709b9419868bb7bbeb47893da0075b8b149911d",
+    "receiving_tx_hash": "0x6cf4e43da222d464607156b03a7640ec97a0fa241baebf33722af5b3a70a902f",
+    "receiving_chain_id": 137,
+    "created_at": "2026-02-08T01:28:59.575742+00:00",
+    "trade_results": {
+      "polymarket": {
+        "order_id": "0x3062708f54443c4aaa9dcaa6e9fa088d2a33dcda1ab360d3d0e44a550ce158c0",
+        "status": "matched",
+        "order_params": {
+          "salt": 981356613,
+          "maker": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "signer": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "taker": "0x0000000000000000000000000000000000000000",
+          "tokenId": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+          "makerAmount": "2980000",
+          "takerAmount": "21285700",
+          "expiration": "0",
+          "nonce": "0",
+          "feeRateBps": "0",
+          "side": "BUY",
+          "signatureType": null,
+          "signature": "0x79c8e456e1089f130841be8cd725891b6021d96a9fd2fc328f4abd3d108a498622db845e13ed048f5cdf6457b7a559cf983979e866b3c37bf026d30c4efa7a161c",
+          "neg_risk": true,
+          "market_id": 558935,
+          "price": 0.14,
+          "amount": 21.35,
+          "order_amount": 2.98
+        }
+      }
+    },
+    "transfer_results": {
+      "polymarket": {
+        "tx_hash": "0x60dc9ce0acd34b1cbbd258e6fa4fd1873efbc2393390889c9ea50c5de4393b26",
+        "success": true,
+        "amount": 21289997
+      }
+    }
+  },
+  {
+    "id": "a8a7bcec",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 12.8205,
+      "avg_price": 0.156,
+      "avg_price_cents": 15.6,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "opinion": {
+          "spent": 2,
+          "qty": 12.8205,
+          "avg_price": 0.156,
+          "avg_price_cents": 15.6,
+          "market_id": 1354,
+          "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488"
+        }
+      },
+      "fills": [
+        {
+          "platform": "opinion",
+          "price": 0.156,
+          "price_cents": 15.6,
+          "size": 12.8205,
+          "cost": 2
+        }
+      ]
+    },
+    "platforms": {
+      "opinion": {
+        "market_id": "1354",
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "spent": 2,
+        "qty": 12.8205
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": "0x8d87879babe762e5ca2c53f58a52cadc64c4a9cc0c6b9b362e995a2b5dc63cce",
+    "from_chain": 56,
+    "tx_hash": "0xb7ef3e8c6bc46394814af71a189e47b1c6687d49f68d8e4e4b2319acae125030",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T01:30:26.328387+00:00",
+    "trade_results": {
+      "opinion": {
+        "order_id": "c480c2dc-048d-11f1-8b59-0a58a9feac02",
+        "status": "NEW",
+        "price": 0.156,
+        "amount": 2.0
+      }
+    },
+    "transfer_results": {
+      "opinion": {
+        "tx_hash": "kept_on_smart_wallet",
+        "success": true,
+        "amount": 9624615384615386664
+      }
+    }
+  },
+  {
+    "id": "5b866fe1",
+    "direction": "sell",
+    "buy_order_id": "cd2bb036",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "platforms": {
+      "opinion": {
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "market_id": "1354"
+      }
+    },
+    "shares_amount": 9620000000000000000,
+    "pull_tx": "skipped_opinion",
+    "to_chain": 137,
+    "status": "sell_matched",
+    "created_at": "2026-02-08T01:31:05.373034+00:00",
+    "trade_results": {
+      "opinion": {
+        "order_id": "db67dc06-048d-11f1-a754-0a58a9feac02",
+        "status": "NEW",
+        "price": 0.155,
+        "amount": 9.61,
+        "balance_before": 1208530974871924154,
+        "order_params": {}
+      }
+    }
   }
 ]

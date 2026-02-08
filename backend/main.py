@@ -5,6 +5,7 @@ import math
 import os
 import sys
 import time
+import threading
 import uuid
 from datetime import datetime, timezone
 from dotenv import load_dotenv
@@ -170,6 +171,7 @@ ROUTER_ABI = json.loads('[{"inputs":[{"internalType":"address","name":"token","t
 PLATFORM_ROUTER_ID = {"polymarket": 1, "opinion": 2, "limitless": 3}
 
 ORDERS_FILE = "static/orders.json"
+_orders_lock = threading.Lock()
 
 def _load_orders():
     if not os.path.exists(ORDERS_FILE):
@@ -386,9 +388,10 @@ async def create_order(body: dict = Body(...)):
             if user_balance < amount_raw:
                 order["status"] = "failed"
                 order["error"] = f"Insufficient balance: have {user_balance / (10**from_decimals):.4f}, need {amount_raw / (10**from_decimals):.4f}"
-                orders = _load_orders()
-                orders.append(order)
-                _save_orders(orders)
+                with _orders_lock:
+                    orders = _load_orders()
+                    orders.append(order)
+                    _save_orders(orders)
                 return order
 
             router = w3.eth.contract(address=router_addr, abi=ROUTER_ABI)
@@ -430,9 +433,10 @@ async def create_order(body: dict = Body(...)):
             if user_balance < amount_raw:
                 order["status"] = "failed"
                 order["error"] = f"Insufficient balance: have {user_balance / (10**from_decimals):.4f}, need {amount_raw / (10**from_decimals):.4f}"
-                orders = _load_orders()
-                orders.append(order)
-                _save_orders(orders)
+                with _orders_lock:
+                    orders = _load_orders()
+                    orders.append(order)
+                    _save_orders(orders)
                 return order
 
             # Determine destination address on this chain
@@ -567,9 +571,10 @@ async def create_order(body: dict = Body(...)):
         order["status"] = "failed"
         order["error"] = str(e)
 
-    orders = _load_orders()
-    orders.append(order)
-    _save_orders(orders)
+    with _orders_lock:
+        orders = _load_orders()
+        orders.append(order)
+        _save_orders(orders)
 
     return order
 
@@ -785,8 +790,10 @@ async def create_sell(body: dict = Body(...)):
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
-    orders.append(sell_order)
-    _save_orders(orders)
+    with _orders_lock:
+        orders = _load_orders()
+        orders.append(sell_order)
+        _save_orders(orders)
     return sell_order
 
 
@@ -1154,7 +1161,21 @@ def _bridge_back(order: dict) -> dict:
     amount_raw = int(math.floor(balance / floor_factor) * floor_factor)
     min_amount = 10 ** decimals  # $1
     if amount_raw < min_amount:
-        return {"error": f"amount too small to bridge: {amount_raw / (10 ** decimals):.4f}"}
+        # Too small for LiFi — fallback: direct transfer on platform chain
+        # Check actual balance first to avoid stealing other orders' funds
+        actual_bal = adapter.get_stablecoin_balance() if hasattr(adapter, 'get_stablecoin_balance') else proceeds
+        if actual_bal < proceeds:
+            return {"error": f"insufficient balance for fallback: have {actual_bal/(10**decimals):.4f}, need {proceeds/(10**decimals):.4f}"}
+        try:
+            tx_hash = adapter.transfer_usdt_to_user(user_addr, proceeds)
+            rpc_map = {137: POLYGON_RPC, 56: "https://bsc-dataseed.binance.org", 8453: BASE_RPC}
+            from web3 import Web3 as W3
+            _w = W3(W3.HTTPProvider(rpc_map.get(from_chain, POLYGON_RPC)))
+            _w.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+            logger.info(f"Sell {order['id']}: amount too small for bridge, direct transfer {proceeds/(10**decimals):.4f} on chain {from_chain}, tx={tx_hash}")
+            return {"bridge_tx": tx_hash, "amount": proceeds, "direct": True}
+        except Exception as e:
+            return {"error": f"fallback transfer failed: {e}"}
 
     try:
         lifi_resp = req_lib.get("https://li.quest/v1/quote", params={
@@ -1232,7 +1253,13 @@ async def poll_orders():
         orders = _load_orders()
         changed = False
 
+        changed_ids = set()
+
         for o in orders:
+            # Skip killed/terminal orders
+            if o.get("status") == "killed":
+                continue
+
             # === BUY FLOW ===
             # Step 1: Poll LiFi for sent orders
             if o["status"] == "sent" and o.get("tx_hash"):
@@ -1250,18 +1277,18 @@ async def poll_orders():
                             recv = data.get("receiving", {})
                             o["receiving_tx_hash"] = recv.get("txHash")
                             o["receiving_chain_id"] = recv.get("chainId")
-                            changed = True
+                            changed = True; changed_ids.add(o["id"])
                             logger.info(f"Order {o['id']}: bridge done")
                         elif lifi_status == "FAILED":
                             o["status"] = "failed"
-                            changed = True
+                            changed = True; changed_ids.add(o["id"])
                 except Exception:
                     pass
 
             # Step 2: Execute trades for bridged orders (with retries)
             elif o["status"] in ("bridged", "trade_failed") and o.get("direction") != "sell":
                 retries = o.get("trade_retries", 0)
-                if o["status"] == "trade_failed" and retries >= MAX_RETRIES:
+                if o["status"] == "trade_failed" and (retries >= MAX_RETRIES or "trade_retries" not in o):
                     continue
                 try:
                     results = await asyncio.to_thread(_execute_trades, o)
@@ -1276,13 +1303,13 @@ async def poll_orders():
                         if retries + 1 >= MAX_RETRIES:
                             o["status"] = "trade_failed"
                         logger.warning(f"Order {o['id']}: trade attempt {retries+1}/{MAX_RETRIES} failed")
-                    changed = True
+                    changed = True; changed_ids.add(o["id"])
                 except Exception as e:
                     o["trade_retries"] = retries + 1
                     o["trade_error"] = str(e)
                     if retries + 1 >= MAX_RETRIES:
                         o["status"] = "trade_failed"
-                    changed = True
+                    changed = True; changed_ids.add(o["id"])
                     logger.error(f"Order {o['id']}: trade attempt {retries+1}/{MAX_RETRIES} error: {e}")
 
             # Step 3: Poll settlement + transfer shares to user (with retries)
@@ -1293,14 +1320,14 @@ async def poll_orders():
                     if result.get("done"):
                         o["transfer_results"] = result.get("transfers", {})
                         o["status"] = "filled"
-                        changed = True
+                        changed = True; changed_ids.add(o["id"])
                         logger.info(f"Order {o['id']}: shares transferred to user")
                     else:
                         o["settle_retries"] = retries + 1
                         if retries + 1 >= MAX_RETRIES * 2:
                             o["status"] = "trade_failed"
                             o["trade_error"] = "settlement timeout"
-                            changed = True
+                            changed = True; changed_ids.add(o["id"])
                         logger.info(f"Order {o['id']}: settle attempt {retries+1}, waiting…")
                 except Exception as e:
                     o["settle_retries"] = retries + 1
@@ -1311,7 +1338,7 @@ async def poll_orders():
             # Sell step 1: shares_pulled -> sell on platform (with retries)
             elif o["status"] in ("shares_pulled", "trade_failed") and o.get("direction") == "sell":
                 retries = o.get("trade_retries", 0)
-                if retries >= MAX_RETRIES:
+                if retries >= MAX_RETRIES or (o["status"] == "trade_failed" and "trade_retries" not in o):
                     continue
                 try:
                     sell_platform = next(iter(o.get("platforms", {})), "polymarket")
@@ -1327,13 +1354,13 @@ async def poll_orders():
                     else:
                         o["status"] = "sell_matched"
                         logger.info(f"Sell {o['id']}: matched on attempt {retries+1}")
-                    changed = True
+                    changed = True; changed_ids.add(o["id"])
                 except Exception as e:
                     o["trade_retries"] = retries + 1
                     o["trade_error"] = str(e)
                     if retries + 1 >= MAX_RETRIES:
                         o["status"] = "trade_failed"
-                    changed = True
+                    changed = True; changed_ids.add(o["id"])
                     logger.error(f"Sell {o['id']}: trade attempt {retries+1}/{MAX_RETRIES} error: {e}")
 
             # Sell step 2: sell_matched -> wait for USDC settlement (with retries)
@@ -1344,14 +1371,14 @@ async def poll_orders():
                     if result.get("done"):
                         o["settle_results"] = result
                         o["status"] = "sell_settled"
-                        changed = True
+                        changed = True; changed_ids.add(o["id"])
                         logger.info(f"Sell {o['id']}: settled")
                     else:
                         o["settle_retries"] = retries + 1
                         if retries + 1 >= MAX_RETRIES * 2:
                             o["status"] = "trade_failed"
                             o["trade_error"] = "settlement timeout"
-                            changed = True
+                            changed = True; changed_ids.add(o["id"])
                         logger.info(f"Sell {o['id']}: settle attempt {retries+1}, waiting…")
                 except Exception as e:
                     o["settle_retries"] = retries + 1
@@ -1376,18 +1403,18 @@ async def poll_orders():
                         o["bridge_back_amount"] = result["amount"]
                         sell_from_chain = PLATFORM_CHAIN.get(sell_platform, 137)
                         sell_to_chain = o.get("to_chain", 8453)
-                        if sell_from_chain == sell_to_chain:
+                        if result.get("direct") or sell_from_chain == sell_to_chain:
                             o["status"] = "completed"
                         else:
                             o["status"] = "bridging_back"
                         logger.info(f"Sell {o['id']}: bridge sent on attempt {retries+1}")
-                    changed = True
+                    changed = True; changed_ids.add(o["id"])
                 except Exception as e:
                     o["bridge_retries"] = retries + 1
                     o["bridge_error"] = str(e)
                     if retries + 1 >= MAX_RETRIES:
                         o["status"] = "bridge_failed"
-                    changed = True
+                    changed = True; changed_ids.add(o["id"])
                     logger.error(f"Sell {o['id']}: bridge attempt {retries+1}/{MAX_RETRIES} error: {e}")
 
             # Sell step 4: bridging_back -> poll LiFi status
@@ -1408,18 +1435,38 @@ async def poll_orders():
                                 o["receiving_tx_hash"] = recv.get("txHash")
                                 o["receiving_chain_id"] = recv.get("chainId")
                                 o["status"] = "completed"
-                                changed = True
+                                changed = True; changed_ids.add(o["id"])
                                 logger.info(f"Sell {o['id']}: bridge back done, completed")
                             elif lifi_status == "FAILED":
                                 o["status"] = "bridge_failed"
                                 o["bridge_retries"] = 0  # allow retry of bridge
-                                changed = True
+                                changed = True; changed_ids.add(o["id"])
                 except Exception:
                     pass
 
         if changed:
-            _save_orders(orders)
+            with _orders_lock:
+                fresh = _load_orders()
+                fresh_map = {o["id"]: o for o in fresh}
+                # Only merge orders that were actually changed in this cycle
+                for o in orders:
+                    if o["id"] in changed_ids:
+                        fresh_map[o["id"]] = o
+                _save_orders(list(fresh_map.values()))
 
+
+@app.post("/api/kill-order/{order_id}")
+async def kill_order(order_id: str):
+    with _orders_lock:
+        orders = _load_orders()
+        for o in orders:
+            if o["id"] == order_id:
+                o["status"] = "killed"
+                o["trade_retries"] = 99
+                o["bridge_retries"] = 99
+                _save_orders(orders)
+                return {"ok": True, "id": order_id}
+        return {"error": "not found"}
 
 @app.on_event("startup")
 async def startup():
