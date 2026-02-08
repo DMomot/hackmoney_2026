@@ -5471,5 +5471,80 @@
         "amount": 16039487179487181536
       }
     }
+  },
+  {
+    "id": "024fd56f",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 12.8205,
+      "avg_price": 0.156,
+      "avg_price_cents": 15.6,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "opinion": {
+          "spent": 2,
+          "qty": 12.8205,
+          "avg_price": 0.156,
+          "avg_price_cents": 15.6,
+          "market_id": 1354,
+          "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488"
+        }
+      },
+      "fills": [
+        {
+          "platform": "opinion",
+          "price": 0.156,
+          "price_cents": 15.6,
+          "size": 12.8205,
+          "cost": 2
+        }
+      ]
+    },
+    "platforms": {
+      "opinion": {
+        "market_id": "1354",
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "spent": 2,
+        "qty": 12.8205
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": "0xa1fb1b11f877e81c1b7f4fbd9a76256858cb4b171e6df63092b94c6190f9ee34",
+    "from_chain": 137,
+    "tx_hash": "0xcf4041e7b222aa84a02a49fdbc9540762f232387d27bd5ff1fb120dd5aed89b1",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T13:54:52.340107+00:00",
+    "bridges": {
+      "56": {
+        "amount": 2000000,
+        "bridge_tx": "0x8d8dd43f89b66f334e5a7f0b5d41dd1fbec5bc4a6ba4ab40f71647007cd7a342",
+        "status": "done"
+      }
+    },
+    "bridge_tx": "0x8d8dd43f89b66f334e5a7f0b5d41dd1fbec5bc4a6ba4ab40f71647007cd7a342",
+    "trade_results": {
+      "opinion": {
+        "order_id": "d6c887d8-04f5-11f1-bccc-0a58a9feac02",
+        "status": "NEW",
+        "price": 0.156,
+        "amount": 2.0
+      }
+    },
+    "transfer_results": {
+      "opinion": {
+        "tx_hash": "kept_on_smart_wallet",
+        "success": true,
+        "amount": 25654358974358976408
+      }
+    }
   }
 ]
