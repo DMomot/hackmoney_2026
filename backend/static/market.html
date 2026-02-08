@@ -712,7 +712,7 @@ async function submitSellOrder(toChainId) {
 
   // No bridge if proceeds go to the same chain as the platform
   const sameChain = toChainId === posChain;
-  openTxModal('sell', sameChain, CHAIN_NAME[toChainId] || 'Base');
+  openTxModal('sell', sameChain, CHAIN_NAME[toChainId] || 'Base', posChain);
   setTxStep('approving_sell');
 
   try {
@@ -845,7 +845,7 @@ async function submitBatchSell(toChainId) {
   const toChainName = CHAIN_NAME[toChainId] || 'Base';
 
   // Open batch modal
-  openTxModal('batch_sell', false, toChainName);
+  openTxModal('batch_sell', false, toChainName, toChainId);
   setTxStep('batch_approving');
 
   try {
@@ -1048,7 +1048,7 @@ async function submitOrder(fromChainId) {
   // Always approve Router on the source chain
   const spenderAddr = routerAddr;
 
-  openTxModal('buy', sameChain, bridgeChainLabel);
+  openTxModal('buy', sameChain, bridgeChainLabel, fromChainId);
   setTxStep('approving');
 
   try {

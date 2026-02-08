@@ -120,9 +120,10 @@ function _createModal() {
 
 const _scanIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
 
-function openTxModal(mode, sameChain, chainName) {
+function openTxModal(mode, sameChain, chainName, fromChainId) {
   const m = _createModal();
   const cname = chainName || 'Base';
+  const stable = (fromChainId == 56) ? 'USDT' : 'USDC';
   if (mode === 'batch_sell') {
     _activeSteps = BATCH_SELL_STEPS;
     ALL_LABELS = {...LABELS_BRIDGE};
@@ -136,6 +137,10 @@ function openTxModal(mode, sameChain, chainName) {
     if (mode === 'buy') ALL_LABELS.bridging = `Bridging to ${cname}…`;
     if (mode === 'sell') ALL_LABELS.bridging_back = `Bridging to ${cname}…`;
   }
+  ALL_LABELS.approving = `Approving ${stable}…`;
+  ALL_LABELS.approved = `${stable} Approved`;
+  if (ALL_LABELS.relaying) ALL_LABELS.relaying = sameChain ? `Transferring ${stable}…` : 'Relaying to Router…';
+  if (ALL_LABELS.settling_sell) ALL_LABELS.settling_sell = `Waiting for ${stable}…`;
   const stepsHtml = _activeSteps.map(s =>
     `<div class="txm-step" data-step="${s}">
       <div class="txm-dot"></div>
