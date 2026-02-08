@@ -9,8 +9,6 @@ RUN pip install --no-cache-dir -r backend/requirements.txt -r relayer/requiremen
 
 COPY backend/ /app/backend/
 COPY relayer/ /app/relayer/
-COPY .env /app/.env
-
 EXPOSE 8000
 
 WORKDIR /app/backend
