@@ -3,11 +3,13 @@
 // Buy same-chain:  approving → approved → relaying → trading → settling → done
 // Sell cross-chain: approving_sell → pulling → selling → settling_sell → bridging_back → done
 // Sell same-chain:  approving_sell → pulling → selling → settling_sell → done
+// Batch sell:       batch_approving → batch_selling → batch_settling → batch_bridging → done
 
 const BUY_STEPS_BRIDGE = ['approving','approved','relaying','sent','bridging','trading','settling','done'];
 const BUY_STEPS_DIRECT = ['approving','approved','relaying','trading','settling','done'];
 const SELL_STEPS_BRIDGE = ['approving_sell','pulling','selling','settling_sell','bridging_back','done'];
 const SELL_STEPS_DIRECT = ['approving_sell','pulling','selling','settling_sell','done'];
+const BATCH_SELL_STEPS = ['batch_approving','batch_selling','batch_settling','batch_bridging','done'];
 
 const LABELS_BRIDGE = {
   approving: 'Approving USDC…',
@@ -24,6 +26,10 @@ const LABELS_BRIDGE = {
   selling:        'Selling on Market…',
   settling_sell:  'Waiting for USDC…',
   bridging_back:  'Bridging to Base…',
+  batch_approving: 'Approving on chains…',
+  batch_selling:   'Selling on platforms…',
+  batch_settling:  'Waiting for proceeds…',
+  batch_bridging:  'Bridging to target…',
 };
 
 const LABELS_DIRECT = {
@@ -114,14 +120,21 @@ function _createModal() {
 
 const _scanIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
 
-function openTxModal(mode, sameChain) {
+function openTxModal(mode, sameChain, chainName) {
   const m = _createModal();
-  if (sameChain) {
+  const cname = chainName || 'Base';
+  if (mode === 'batch_sell') {
+    _activeSteps = BATCH_SELL_STEPS;
+    ALL_LABELS = {...LABELS_BRIDGE};
+    ALL_LABELS.batch_bridging = `Bridging to ${cname}…`;
+  } else if (sameChain) {
     _activeSteps = mode === 'sell' ? SELL_STEPS_DIRECT : BUY_STEPS_DIRECT;
-    ALL_LABELS = LABELS_DIRECT;
+    ALL_LABELS = {...LABELS_DIRECT};
   } else {
     _activeSteps = mode === 'sell' ? SELL_STEPS_BRIDGE : BUY_STEPS_BRIDGE;
-    ALL_LABELS = LABELS_BRIDGE;
+    ALL_LABELS = {...LABELS_BRIDGE};
+    if (mode === 'buy') ALL_LABELS.bridging = `Bridging to ${cname}…`;
+    if (mode === 'sell') ALL_LABELS.bridging_back = `Bridging to ${cname}…`;
   }
   const stepsHtml = _activeSteps.map(s =>
     `<div class="txm-step" data-step="${s}">

@@ -273,83 +273,22 @@
     ]
   },
   {
-    "id": "nba-champion-2026",
-    "title": "2026 NBA Champion",
-    "icon": "🏀",
-    "date": "Jun 30, 2026",
+    "id": "anthropic-acquired-2027",
+    "title": "Anthropic acquired before 2027?",
+    "icon": "💎",
+    "date": "Jan 1, 2027",
     "outcomes": [
       {
-        "name": "Oklahoma City",
-        "pct": 39,
-        "yesPrice": 39.0,
-        "noPrice": 61.0
-      },
-      {
-        "name": "Denver Nuggets",
-        "pct": 12,
-        "yesPrice": 12.0,
-        "noPrice": 88.0
+        "name": "Anthropic acquired before 2027?",
+        "pct": 11,
+        "yesPrice": 11.0,
+        "noPrice": 89.0
       }
     ],
-    "volume": "$474.1M",
-    "txs": "3.1M tx",
+    "volume": "$1.4K",
+    "txs": "—",
     "platforms": [
       "polymarket",
-      "opinion",
-      "limitless"
-    ]
-  },
-  {
-    "id": "epl-winner-2026",
-    "title": "English Premier League Winner 2026",
-    "icon": "⚽",
-    "date": "May 25, 2026",
-    "outcomes": [
-      {
-        "name": "Arsenal",
-        "pct": 81,
-        "yesPrice": 81.0,
-        "noPrice": 19.0
-      },
-      {
-        "name": "Man City",
-        "pct": 15,
-        "yesPrice": 15.0,
-        "noPrice": 85.0
-      }
-    ],
-    "volume": "$413.6M",
-    "txs": "1.7M tx",
-    "platforms": [
-      "polymarket",
-      "opinion",
-      "limitless"
-    ]
-  },
-  {
-    "id": "ucl-winner-2026",
-    "title": "UEFA Champions League Winner",
-    "icon": "🏆",
-    "date": "May 30, 2026",
-    "outcomes": [
-      {
-        "name": "Real Madrid",
-        "pct": 22,
-        "yesPrice": 22.0,
-        "noPrice": 78.0
-      },
-      {
-        "name": "Barcelona",
-        "pct": 18,
-        "yesPrice": 18.0,
-        "noPrice": 82.0
-      }
-    ],
-    "volume": "$320.5M",
-    "txs": "1.2M tx",
-    "platforms": [
-      "polymarket",
-      "opinion",
       "limitless"
     ]
   }

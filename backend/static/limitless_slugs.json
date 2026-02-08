@@ -29,5 +29,12 @@
       "Austria": "austria-1765296582390",
       "Other": "other-1765296582394"
     }
+  },
+  "anthropic-acquired-2027": {
+    "event_title": "Anthropic acquired before 2027?",
+    "slug": "anthropic-acquired-before-2027-1764856036744",
+    "teams": {
+      "Anthropic acquired before 2027?": "anthropic-acquired-before-2027-1764856036744"
+    }
   }
 }

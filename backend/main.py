@@ -37,6 +37,13 @@ LIFI_DIAMOND = "0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE"
 USDC_POLYGON = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"  # USDC.e on Polygon
 USDT_BSC = "0x55d398326f99059fF775485246999027B3197955"  # USDT on BSC
 
+# Router per chain
+CHAIN_ROUTER = {
+    8453: ROUTER_ADDRESS,
+    56: "0xB80998ac4e349Bb34dA07823eF950ec32108F2E8",
+    137: "0x5a5626DC1e713438EB62f7b6Fb81add038f74BcC",
+}
+
 # Platform chain mapping
 PLATFORM_CHAIN = {"polymarket": 137, "opinion": 56, "limitless": 8453}
 PLATFORM_STABLE = {"polymarket": USDC_POLYGON, "opinion": USDT_BSC, "limitless": USDC_BASE}
@@ -219,6 +226,7 @@ def _load_platform_teams():
     return data
 
 _platform_teams = _load_platform_teams()
+logger.info(f"Platform teams loaded: {list(_platform_teams.keys())}")
 
 
 @app.get("/api/config")
@@ -227,6 +235,7 @@ async def config():
     return {
         "wc_project_id": os.getenv("WALLET_CONNECT_PROJECT_ID", ""),
         "router_address": ROUTER_ADDRESS,
+        "chain_routers": CHAIN_ROUTER,
         "usdc_address": USDC_BASE,
         "relayer_address": relayer_addr,
     }
@@ -371,202 +380,117 @@ async def create_order(body: dict = Body(...)):
         from_decimals = CHAIN_DECIMALS.get(from_chain, 6)
         amount_raw = int(body["budget"] * (10 ** from_decimals))
 
-        # Detect target chain from platforms in route
-        primary_platform = next(iter(platforms), "polymarket")
-        to_chain = PLATFORM_CHAIN.get(primary_platform, 137)
-        to_token = PLATFORM_STABLE.get(primary_platform, USDC_POLYGON)
+        # Group platforms by target chain
+        chain_budgets = {}
+        for pname, pdata in platforms.items():
+            target = PLATFORM_CHAIN.get(pname, 137)
+            chain_budgets[target] = chain_budgets.get(target, 0) + pdata.get("spent", 0)
 
-        # Same chain = from_chain equals target platform chain
-        same_chain = from_chain == to_chain
+        needs_bridge = not set(chain_budgets.keys()).issubset({from_chain})
+        relayer_addr = Account.from_key(RELAYER_KEY).address if RELAYER_KEY else OWNER_ACCOUNT.address
 
-        if same_chain and from_chain == 8453:
-            # Same chain on Base — use Router.transferERC20, no bridge
-            # Check user balance on Base
-            usdc_abi = [{"inputs": [{"name": "account", "type": "address"}], "name": "balanceOf", "outputs": [{"type": "uint256"}], "type": "function"}]
-            usdc_contract = w3.eth.contract(address=Web3.to_checksum_address(from_token), abi=usdc_abi)
-            user_balance = usdc_contract.functions.balanceOf(user_addr).call()
-            if user_balance < amount_raw:
-                order["status"] = "failed"
-                order["error"] = f"Insufficient balance: have {user_balance / (10**from_decimals):.4f}, need {amount_raw / (10**from_decimals):.4f}"
-                with _orders_lock:
-                    orders = _load_orders()
-                    orders.append(order)
-                    _save_orders(orders)
-                return order
-
-            router = w3.eth.contract(address=router_addr, abi=ROUTER_ABI)
-            pid = PLATFORM_ROUTER_ID.get(primary_platform, 0)
-            metadata = Web3.to_bytes(text=json.dumps({
-                "order_id": order_id, "event_id": body["event_id"],
-                "team": body["team"], "side": body["side"],
-            }))
-            tx = router.functions.transferERC20(
-                Web3.to_checksum_address(from_token), user_addr, pid, amount_raw, metadata,
-            ).build_transaction({
-                "from": OWNER_ACCOUNT.address,
-                "nonce": w3.eth.get_transaction_count(OWNER_ACCOUNT.address, "pending"),
-                "gas": 150000,
-                "maxFeePerGas": w3.eth.gas_price * 2,
-                "maxPriorityFeePerGas": w3.eth.max_priority_fee,
-                "chainId": 8453,
-            })
-            signed = OWNER_ACCOUNT.sign_transaction(tx)
-            tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
-            order["tx_hash"] = "0x" + tx_hash.hex()
-            w3.eth.wait_for_transaction_receipt(tx_hash, timeout=30)
-            order["status"] = "bridged"  # skip LiFi, go straight to trades
-            logger.info(f"Order {order_id}: Router.transferERC20 {amount_raw/(10**from_decimals):.2f}, tx={order['tx_hash']}")
-        elif same_chain:
-            # Same chain but NOT Base (e.g. user pays on Polygon for Polymarket) — relayer pulls directly
-            # Relayer needs to transferFrom on that chain; user approved relayer EOA
-            from web3 import Web3 as W3
-            chain_rpcs = {137: POLYGON_RPC, 56: os.getenv("BSC_RPC", "https://bsc-rpc.publicnode.com")}
-            chain_w3 = W3(W3.HTTPProvider(chain_rpcs.get(from_chain, POLYGON_RPC)))
-            relayer_addr = Account.from_key(RELAYER_KEY).address
-
-            erc20_abi = [
-                {"inputs": [{"name": "from", "type": "address"},{"name": "to", "type": "address"},{"name": "amount", "type": "uint256"}], "name": "transferFrom", "outputs": [{"type": "bool"}], "type": "function"},
-                {"inputs": [{"name": "account", "type": "address"}], "name": "balanceOf", "outputs": [{"type": "uint256"}], "type": "function"},
-            ]
-            token_contract = chain_w3.eth.contract(address=W3.to_checksum_address(from_token), abi=erc20_abi)
-            user_balance = token_contract.functions.balanceOf(user_addr).call()
-            if user_balance < amount_raw:
-                order["status"] = "failed"
-                order["error"] = f"Insufficient balance: have {user_balance / (10**from_decimals):.4f}, need {amount_raw / (10**from_decimals):.4f}"
-                with _orders_lock:
-                    orders = _load_orders()
-                    orders.append(order)
-                    _save_orders(orders)
-                return order
-
-            # Determine destination address on this chain
-            if primary_platform == "opinion":
-                dest = os.getenv("OPINION_WALLET_ADDRESS", relayer_addr)
+        # to_address per chain for bridges (opinion has its own wallet)
+        chain_to_addr = {}
+        for pname in platforms:
+            ch = PLATFORM_CHAIN.get(pname, 137)
+            if pname == "opinion":
+                chain_to_addr[ch] = os.getenv("OPINION_WALLET_ADDRESS", "")
             else:
-                dest = relayer_addr
+                chain_to_addr.setdefault(ch, relayer_addr)
 
-            tx = token_contract.functions.transferFrom(user_addr, W3.to_checksum_address(dest), amount_raw).build_transaction({
-                "from": relayer_addr,
-                "nonce": chain_w3.eth.get_transaction_count(relayer_addr, "pending"),
-                "gas": 100000,
-                "gasPrice": chain_w3.eth.gas_price,
-                "chainId": from_chain,
-            })
-            signed = Account.from_key(RELAYER_KEY).sign_transaction(tx)
-            tx_hash = chain_w3.eth.send_raw_transaction(signed.raw_transaction)
-            order["tx_hash"] = "0x" + tx_hash.hex()
-            chain_w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
-            order["status"] = "bridged"  # no bridge needed
-            logger.info(f"Order {order_id}: same-chain transferFrom on chain {from_chain}, tx={order['tx_hash']}")
+        # Connect to source chain
+        from web3 import Web3 as W3
+        chain_rpcs = {8453: BASE_RPC, 137: POLYGON_RPC, 56: os.getenv("BSC_RPC", "https://bsc-rpc.publicnode.com")}
+        src_w3 = W3(W3.HTTPProvider(chain_rpcs.get(from_chain, BASE_RPC)))
+
+        # Step 1: Pull ALL funds from user via Router.transferERC20
+        src_router_addr = W3.to_checksum_address(CHAIN_ROUTER.get(from_chain, ROUTER_ADDRESS))
+        src_router = src_w3.eth.contract(address=src_router_addr, abi=ROUTER_ABI)
+        pid = PLATFORM_ROUTER_ID.get(next(iter(platforms)), 0)
+        metadata = W3.to_bytes(text=json.dumps({
+            "order_id": order_id, "event_id": body["event_id"],
+            "team": body["team"], "side": body["side"],
+        }))
+        nonce = src_w3.eth.get_transaction_count(OWNER_ACCOUNT.address, "pending")
+        gas_price = src_w3.eth.gas_price
+        pull_gas = {"maxFeePerGas": gas_price * 2, "maxPriorityFeePerGas": src_w3.eth.max_priority_fee} if from_chain == 8453 else {"gasPrice": gas_price}
+        pull_tx = src_router.functions.transferERC20(
+            W3.to_checksum_address(from_token), user_addr, pid, amount_raw, metadata,
+        ).build_transaction({
+            "from": OWNER_ACCOUNT.address, "nonce": nonce, "gas": 200000, "chainId": from_chain, **pull_gas,
+        })
+        signed = OWNER_ACCOUNT.sign_transaction(pull_tx)
+        pull_hash = src_w3.eth.send_raw_transaction(signed.raw_transaction)
+        receipt = src_w3.eth.wait_for_transaction_receipt(pull_hash, timeout=60)
+        if receipt.status != 1:
+            raise Exception(f"Router.transferERC20 reverted: 0x{pull_hash.hex()}")
+        nonce += 1
+        order["tx_hash"] = "0x" + pull_hash.hex()
+        logger.info(f"Order {order_id}: pulled {amount_raw/(10**from_decimals):.2f} from user on chain {from_chain}")
+
+        # Step 2: Bridge to target chains (or skip if all same chain)
+        if not needs_bridge:
+            order["status"] = "bridged"
         else:
-            # Cross-chain: user's from_chain differs from platform's chain
-            # If from_chain == 8453 (Base), use Router.bridgeViaLiFi; otherwise relayer transferFrom + bridge
-            if primary_platform == "opinion":
-                to_address = os.getenv("OPINION_WALLET_ADDRESS", "")
-            else:
-                to_address = Account.from_key(RELAYER_KEY).address if RELAYER_KEY else user_addr
+            bridges = {}
+            for target_chain, budget_usd in chain_budgets.items():
+                if target_chain == from_chain:
+                    # No bridge needed — funds already on this chain
+                    bridges[str(target_chain)] = {"amount": int(budget_usd * (10 ** from_decimals)), "status": "done"}
+                    continue
 
-            if from_chain == 8453:
-                # User pays on Base, bridge to target chain via Router
-                lifi_params = {
-                    "fromChain": 8453,
-                    "toChain": to_chain,
-                    "fromToken": USDC_BASE,
-                    "toToken": to_token,
-                    "fromAmount": str(amount_raw),
-                    "fromAddress": router_addr,
-                    "toAddress": Web3.to_checksum_address(to_address),
-                    "slippage": "0.05",
-                    "integrator": "premarket-router",
-                }
-                logger.info(f"LiFi quote params: {lifi_params}")
-                lifi_resp = req_lib.get("https://li.quest/v1/quote", params=lifi_params, timeout=15)
+                bridge_amount = int(budget_usd * (10 ** from_decimals))
+                to_token = CHAIN_STABLE.get(target_chain, USDC_BASE)
+                to_addr = W3.to_checksum_address(chain_to_addr.get(target_chain, relayer_addr))
+
+                # LiFi quote
+                lifi_resp = req_lib.get("https://li.quest/v1/quote", params={
+                    "fromChain": from_chain, "toChain": target_chain,
+                    "fromToken": from_token, "toToken": to_token,
+                    "fromAmount": str(bridge_amount), "fromAddress": relayer_addr,
+                    "toAddress": to_addr, "slippage": "0.05", "integrator": "premarket-router",
+                }, timeout=15)
                 lifi_quote = lifi_resp.json()
                 if "transactionRequest" not in lifi_quote:
-                    raise Exception(f"LiFi quote error: {json.dumps(lifi_quote)[:500]}")
-                lifi_data = lifi_quote["transactionRequest"]["data"]
-
-                metadata = Web3.to_bytes(text=json.dumps({
-                    "order_id": order_id, "event_id": body["event_id"],
-                    "team": body["team"], "side": body["side"],
-                }))
-
-                router = w3.eth.contract(address=router_addr, abi=ROUTER_ABI)
-                tx = router.functions.bridgeViaLiFi(
-                    Web3.to_checksum_address(USDC_BASE), user_addr, amount_raw,
-                    Web3.to_checksum_address(LIFI_DIAMOND),
-                    bytes.fromhex(lifi_data[2:]), metadata,
-                ).build_transaction({
-                    "from": OWNER_ACCOUNT.address,
-                    "nonce": w3.eth.get_transaction_count(OWNER_ACCOUNT.address, "pending"),
-                    "gas": 500000,
-                    "maxFeePerGas": w3.eth.gas_price * 2,
-                    "maxPriorityFeePerGas": w3.eth.max_priority_fee,
-                    "chainId": 8453,
-                })
-                signed = OWNER_ACCOUNT.sign_transaction(tx)
-                tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
-                order["tx_hash"] = "0x" + tx_hash.hex()
-                order["status"] = "sent"
-            else:
-                # User pays on non-Base chain, need to pull there then bridge to target
-                from web3 import Web3 as W3
-                chain_rpcs = {137: POLYGON_RPC, 56: os.getenv("BSC_RPC", "https://bsc-rpc.publicnode.com")}
-                chain_w3 = W3(W3.HTTPProvider(chain_rpcs.get(from_chain, POLYGON_RPC)))
-                relayer_addr = Account.from_key(RELAYER_KEY).address
-
-                erc20_abi = [
-                    {"inputs": [{"name": "from", "type": "address"},{"name": "to", "type": "address"},{"name": "amount", "type": "uint256"}], "name": "transferFrom", "outputs": [{"type": "bool"}], "type": "function"},
-                ]
-                token_contract = chain_w3.eth.contract(address=W3.to_checksum_address(from_token), abi=erc20_abi)
-                tx = token_contract.functions.transferFrom(user_addr, W3.to_checksum_address(relayer_addr), amount_raw).build_transaction({
-                    "from": relayer_addr,
-                    "nonce": chain_w3.eth.get_transaction_count(relayer_addr, "pending"),
-                    "gas": 100000,
-                    "gasPrice": chain_w3.eth.gas_price,
-                    "chainId": from_chain,
-                })
-                signed = Account.from_key(RELAYER_KEY).sign_transaction(tx)
-                pull_hash = chain_w3.eth.send_raw_transaction(signed.raw_transaction)
-                chain_w3.eth.wait_for_transaction_receipt(pull_hash, timeout=60)
-                order["tx_hash"] = "0x" + pull_hash.hex()
-                logger.info(f"Order {order_id}: pulled from user on chain {from_chain}, tx={order['tx_hash']}")
-
-                # Now bridge from from_chain to to_chain via LiFi
-                lifi_params = {
-                    "fromChain": from_chain,
-                    "toChain": to_chain,
-                    "fromToken": from_token,
-                    "toToken": to_token,
-                    "fromAmount": str(amount_raw),
-                    "fromAddress": relayer_addr,
-                    "toAddress": Web3.to_checksum_address(to_address),
-                    "slippage": "0.05",
-                    "integrator": "premarket-router",
-                }
-                logger.info(f"LiFi quote params (cross): {lifi_params}")
-                lifi_resp = req_lib.get("https://li.quest/v1/quote", params=lifi_params, timeout=15)
-                lifi_quote = lifi_resp.json()
-                if "transactionRequest" not in lifi_quote:
-                    raise Exception(f"LiFi quote error: {json.dumps(lifi_quote)[:500]}")
+                    raise Exception(f"LiFi quote error for chain {target_chain}: {json.dumps(lifi_quote)[:500]}")
                 lifi_tx_req = lifi_quote["transactionRequest"]
+                lifi_diamond = W3.to_checksum_address(lifi_tx_req["to"])
 
-                # Send bridge tx from relayer on from_chain
-                bridge_tx = {
-                    "from": relayer_addr,
-                    "to": W3.to_checksum_address(lifi_tx_req["to"]),
-                    "data": lifi_tx_req["data"],
+                # Approve LiFi Diamond
+                approve_abi = [{"inputs": [{"name": "spender", "type": "address"}, {"name": "amount", "type": "uint256"}],
+                                "name": "approve", "outputs": [{"type": "bool"}], "type": "function"}]
+                token_c = src_w3.eth.contract(address=W3.to_checksum_address(from_token), abi=approve_abi)
+                appr_tx = token_c.functions.approve(lifi_diamond, bridge_amount).build_transaction({
+                    "from": relayer_addr, "nonce": nonce, "gas": 80000,
+                    "gasPrice": int(gas_price * 1.3), "chainId": from_chain,
+                })
+                signed_a = Account.from_key(RELAYER_KEY).sign_transaction(appr_tx)
+                src_w3.eth.send_raw_transaction(signed_a.raw_transaction)
+                src_w3.eth.wait_for_transaction_receipt(signed_a.hash, timeout=60)
+                nonce += 1
+
+                # Bridge tx — use gasLimit from LiFi
+                lifi_gas = int(lifi_tx_req.get("gasLimit", "0"), 16) if isinstance(lifi_tx_req.get("gasLimit"), str) else int(lifi_tx_req.get("gasLimit", 0))
+                if lifi_gas < 500000:
+                    lifi_gas = 800000
+                br_tx = {
+                    "from": relayer_addr, "to": lifi_diamond, "data": lifi_tx_req["data"],
                     "value": int(lifi_tx_req.get("value", "0"), 16) if isinstance(lifi_tx_req.get("value"), str) else int(lifi_tx_req.get("value", 0)),
-                    "nonce": chain_w3.eth.get_transaction_count(relayer_addr, "pending"),
-                    "gas": int(lifi_tx_req.get("gasLimit", "500000"), 16) if isinstance(lifi_tx_req.get("gasLimit"), str) else int(lifi_tx_req.get("gasLimit", 500000)),
-                    "gasPrice": chain_w3.eth.gas_price,
-                    "chainId": from_chain,
+                    "nonce": nonce, "gas": lifi_gas, "gasPrice": gas_price, "chainId": from_chain,
                 }
-                signed = Account.from_key(RELAYER_KEY).sign_transaction(bridge_tx)
-                bridge_hash = chain_w3.eth.send_raw_transaction(signed.raw_transaction)
-                order["bridge_tx"] = "0x" + bridge_hash.hex()
-                order["status"] = "sent"
-                logger.info(f"Order {order_id}: LiFi bridge from {from_chain} to {to_chain}, tx={order['bridge_tx']}")
+                signed_b = Account.from_key(RELAYER_KEY).sign_transaction(br_tx)
+                bh = src_w3.eth.send_raw_transaction(signed_b.raw_transaction)
+                nonce += 1
+                bh_hex = "0x" + bh.hex()
+                bridges[str(target_chain)] = {"amount": bridge_amount, "bridge_tx": bh_hex, "status": "sent"}
+                logger.info(f"Order {order_id}: bridge {budget_usd:.2f} to chain {target_chain}, tx={bh_hex}")
+
+            order["bridges"] = bridges
+            # Backward compat: set bridge_tx to first actual bridge
+            first_br = next((b["bridge_tx"] for b in bridges.values() if b.get("bridge_tx")), None)
+            if first_br:
+                order["bridge_tx"] = first_br
+            order["status"] = "sent"
     except Exception as e:
         order["status"] = "failed"
         order["error"] = str(e)
@@ -723,11 +647,9 @@ async def create_sell(body: dict = Body(...)):
         shares_to_sell = min(shares_to_sell, user_shares)
         logger.info(f"Sell: user_shares={user_shares}, requested={sell_amount}, to_sell={shares_to_sell}")
 
-        # Check operator approved by user on CTF
-        if chain_id == 8453:
-            operator = Web3.to_checksum_address(ROUTER_ADDRESS)
-        else:
-            operator = Account.from_key(RELAYER_KEY).address
+        # Check operator approved by user on CTF — always Router
+        chain_router_addr = CHAIN_ROUTER.get(chain_id, ROUTER_ADDRESS)
+        operator = Web3.to_checksum_address(chain_router_addr)
 
         approved = adapter.check_erc1155_approval(user_wallet, operator)
         if not approved:
@@ -739,38 +661,37 @@ async def create_sell(body: dict = Body(...)):
                 "chain_id": chain_id,
             }
 
-        # Pull shares from user
+        # Pull shares from user via Router.transferERC1155
         try:
+            from web3 import Web3 as W3
+            chain_rpcs = {8453: BASE_RPC, 137: POLYGON_RPC, 56: "https://bsc-dataseed.binance.org"}
+            chain_w3 = W3(W3.HTTPProvider(chain_rpcs.get(chain_id, BASE_RPC)))
+            router = chain_w3.eth.contract(address=operator, abi=ROUTER_ABI)
+            pid = PLATFORM_ROUTER_ID.get(platform, 0)
+            user_addr = W3.to_checksum_address(user_wallet)
+            metadata = W3.to_bytes(text=json.dumps({"sell_id": sell_id, "platform": platform}))
+            tx_params = {
+                "from": OWNER_ACCOUNT.address,
+                "nonce": chain_w3.eth.get_transaction_count(OWNER_ACCOUNT.address, "pending"),
+                "gas": 200000,
+                "chainId": chain_id,
+            }
             if chain_id == 8453:
-                router_addr = Web3.to_checksum_address(ROUTER_ADDRESS)
-                pid = PLATFORM_ROUTER_ID.get(platform, 0)
-                router = w3.eth.contract(address=router_addr, abi=ROUTER_ABI)
-                user_addr = Web3.to_checksum_address(user_wallet)
-                metadata = Web3.to_bytes(text=json.dumps({"sell_id": sell_id, "platform": platform}))
-                tx = router.functions.transferERC1155(
-                    Web3.to_checksum_address(ctf_address), user_addr, pid,
-                    int(token_id), shares_to_sell, metadata,
-                ).build_transaction({
-                    "from": OWNER_ACCOUNT.address,
-                    "nonce": w3.eth.get_transaction_count(OWNER_ACCOUNT.address, "pending"),
-                    "gas": 200000,
-                    "maxFeePerGas": w3.eth.gas_price * 2,
-                    "maxPriorityFeePerGas": w3.eth.max_priority_fee,
-                    "chainId": 8453,
-                })
-                signed = OWNER_ACCOUNT.sign_transaction(tx)
-                tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
-                pull_tx = "0x" + tx_hash.hex()
-                w3.eth.wait_for_transaction_receipt(tx_hash, timeout=30)
-                logger.info(f"Sell {sell_id}: Router.transferERC1155 pulled {shares_to_sell} shares, tx={pull_tx}")
+                tx_params["maxFeePerGas"] = chain_w3.eth.gas_price * 2
+                tx_params["maxPriorityFeePerGas"] = chain_w3.eth.max_priority_fee
             else:
-                pull_tx = adapter.transfer_erc1155_from_user(user_wallet, token_id, shares_to_sell)
-                chain_rpc = {137: POLYGON_RPC, 56: "https://bsc-dataseed.binance.org"}.get(chain_id, POLYGON_RPC)
-                _w3 = Web3(Web3.HTTPProvider(chain_rpc))
-                receipt = _w3.eth.wait_for_transaction_receipt(pull_tx, timeout=30)
-                if receipt["status"] != 1:
-                    raise Exception(f"pull tx reverted: {pull_tx}")
-                logger.info(f"Sell {sell_id}: adapter pulled {shares_to_sell} shares on chain {chain_id}, tx={pull_tx}")
+                tx_params["gasPrice"] = chain_w3.eth.gas_price
+            tx = router.functions.transferERC1155(
+                W3.to_checksum_address(ctf_address), user_addr, pid,
+                int(token_id), shares_to_sell, metadata,
+            ).build_transaction(tx_params)
+            signed = OWNER_ACCOUNT.sign_transaction(tx)
+            tx_hash = chain_w3.eth.send_raw_transaction(signed.raw_transaction)
+            pull_tx = "0x" + tx_hash.hex()
+            receipt = chain_w3.eth.wait_for_transaction_receipt(tx_hash, timeout=30)
+            if receipt["status"] != 1:
+                raise Exception(f"pull tx reverted: {pull_tx}")
+            logger.info(f"Sell {sell_id}: Router.transferERC1155 on chain {chain_id}, pulled {shares_to_sell} shares, tx={pull_tx}")
         except Exception as e:
             return {"error": f"failed to pull shares: {e}"}
 
@@ -1200,8 +1121,8 @@ def _bridge_back(order: dict) -> dict:
 
         # Connect to source chain
         from web3 import Web3 as W3
-        rpc_map = {137: POLYGON_RPC, 56: "https://bsc-dataseed.binance.org"}
-        w3_src = W3(W3.HTTPProvider(rpc_map.get(from_chain, POLYGON_RPC)))
+        rpc_map = {8453: BASE_RPC, 137: POLYGON_RPC, 56: "https://bsc-dataseed.binance.org"}
+        w3_src = W3(W3.HTTPProvider(rpc_map.get(from_chain, BASE_RPC)))
         if from_chain == 137:
             from web3.middleware import ExtraDataToPOAMiddleware
             w3_src.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
@@ -1211,9 +1132,10 @@ def _bridge_back(order: dict) -> dict:
                         "name": "approve", "outputs": [{"type": "bool"}], "type": "function"}]
         token_contract = w3_src.eth.contract(address=W3.to_checksum_address(from_token), abi=approve_abi)
         gas_price = w3_src.eth.gas_price
+        nonce = w3_src.eth.get_transaction_count(from_address, "pending")
         approve_tx = token_contract.functions.approve(lifi_to, amount_raw).build_transaction({
             "from": from_address,
-            "nonce": w3_src.eth.get_transaction_count(from_address, "pending"),
+            "nonce": nonce,
             "gas": 80000,
             "gasPrice": int(gas_price * 1.3),
             "chainId": from_chain,
@@ -1221,13 +1143,18 @@ def _bridge_back(order: dict) -> dict:
         signed_approve = w3_src.eth.account.sign_transaction(approve_tx, bridge_key)
         w3_src.eth.send_raw_transaction(signed_approve.raw_transaction)
         w3_src.eth.wait_for_transaction_receipt(signed_approve.hash, timeout=60)
+        nonce += 1
         logger.info(f"Sell {order['id']}: approved LiFi on chain {from_chain}")
 
-        # Send bridge tx
+        # Send bridge tx — use gasLimit from LiFi
+        lifi_gas_raw = tx_req.get("gasLimit", "0")
+        lifi_gas = int(lifi_gas_raw, 16) if isinstance(lifi_gas_raw, str) and lifi_gas_raw.startswith("0x") else int(lifi_gas_raw or 0)
+        if lifi_gas < 500000:
+            lifi_gas = 800000
         bridge_tx = {
             "from": from_address, "to": lifi_to, "data": lifi_data, "value": lifi_value,
-            "nonce": w3_src.eth.get_transaction_count(from_address, "pending"),
-            "gas": 500000, "gasPrice": int(gas_price * 1.5), "chainId": from_chain,
+            "nonce": nonce,
+            "gas": lifi_gas, "gasPrice": int(gas_price * 1.5), "chainId": from_chain,
         }
         signed_bridge = w3_src.eth.account.sign_transaction(bridge_tx, bridge_key)
         bridge_hash = w3_src.eth.send_raw_transaction(signed_bridge.raw_transaction)
@@ -1261,27 +1188,58 @@ async def poll_orders():
                 continue
 
             # === BUY FLOW ===
-            # Step 1: Poll LiFi for sent orders
-            if o["status"] == "sent" and o.get("tx_hash"):
+            # Step 1: Poll LiFi for sent orders (supports multi-bridge)
+            if o["status"] == "sent":
                 try:
-                    async with httpx.AsyncClient() as client:
-                        resp = await client.get(
-                            "https://li.quest/v1/status",
-                            params={"txHash": o["tx_hash"]},
-                            timeout=10,
-                        )
-                        data = resp.json()
-                        lifi_status = data.get("status", "")
-                        if lifi_status == "DONE":
-                            o["status"] = "bridged"
-                            recv = data.get("receiving", {})
-                            o["receiving_tx_hash"] = recv.get("txHash")
-                            o["receiving_chain_id"] = recv.get("chainId")
-                            changed = True; changed_ids.add(o["id"])
-                            logger.info(f"Order {o['id']}: bridge done")
-                        elif lifi_status == "FAILED":
+                    bridges = o.get("bridges")
+                    if bridges:
+                        # Multi-bridge: poll each bridge independently
+                        all_done = True
+                        any_failed = False
+                        for chain_id, bdata in bridges.items():
+                            if bdata.get("status") == "done":
+                                continue
+                            btx = bdata.get("bridge_tx")
+                            if not btx:
+                                continue
+                            async with httpx.AsyncClient() as client:
+                                resp = await client.get("https://li.quest/v1/status", params={"txHash": btx}, timeout=10)
+                                data = resp.json()
+                                st = data.get("status", "")
+                                if st == "DONE":
+                                    bdata["status"] = "done"
+                                    logger.info(f"Order {o['id']}: bridge to chain {chain_id} done")
+                                elif st == "FAILED":
+                                    bdata["status"] = "failed"
+                                    any_failed = True
+                                    logger.warning(f"Order {o['id']}: bridge to chain {chain_id} failed")
+                                else:
+                                    all_done = False
+                        if any_failed:
                             o["status"] = "failed"
+                            o["error"] = "one or more bridges failed"
                             changed = True; changed_ids.add(o["id"])
+                        elif all_done:
+                            o["status"] = "bridged"
+                            changed = True; changed_ids.add(o["id"])
+                            logger.info(f"Order {o['id']}: all bridges done")
+                    elif o.get("bridge_tx") or o.get("tx_hash"):
+                        # Legacy single-bridge: poll as before
+                        poll_tx = o.get("bridge_tx") or o["tx_hash"]
+                        async with httpx.AsyncClient() as client:
+                            resp = await client.get("https://li.quest/v1/status", params={"txHash": poll_tx}, timeout=10)
+                            data = resp.json()
+                            lifi_status = data.get("status", "")
+                            if lifi_status == "DONE":
+                                o["status"] = "bridged"
+                                recv = data.get("receiving", {})
+                                o["receiving_tx_hash"] = recv.get("txHash")
+                                o["receiving_chain_id"] = recv.get("chainId")
+                                changed = True; changed_ids.add(o["id"])
+                                logger.info(f"Order {o['id']}: bridge done")
+                            elif lifi_status == "FAILED":
+                                o["status"] = "failed"
+                                changed = True; changed_ids.add(o["id"])
                 except Exception:
                     pass
 

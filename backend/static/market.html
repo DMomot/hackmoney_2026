@@ -93,14 +93,15 @@
       background: #fff; border-radius: 16px; padding: 24px;
       border: 1px solid #e8e8e8; margin-top: 20px;
     }
-    .book-table { width: 100%; border-collapse: collapse; }
+    .book-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     .book-table th {
       text-align: right; font-size: 11px; color: #999; text-transform: uppercase;
       padding: 0 8px 10px; font-weight: 600;
     }
-    .book-table th:first-child { text-align: left; }
+    .book-table th:first-child, .book-table td:first-child { width: 30%; text-align: left; }
+    .book-table th:nth-child(2), .book-table td:nth-child(2) { width: 35%; }
+    .book-table th:nth-child(3), .book-table td:nth-child(3) { width: 35%; }
     .book-table td { padding: 8px; text-align: right; font-size: 14px; border-top: 1px solid #f7f7f7; }
-    .book-table td:first-child { text-align: left; }
     .price-ask { color: #dc2626; font-weight: 600; }
     .price-bid { color: #16a34a; font-weight: 600; }
     .book-divider {
@@ -241,6 +242,7 @@ const PLATFORM_CTF = {
 // Chain hex IDs and scanners
 const CHAIN_HEX = { 137: '0x89', 56: '0x38', 8453: '0x2105' };
 const CHAIN_SCAN = { 137: 'polygonscan.com', 56: 'bscscan.com', 8453: 'basescan.org' };
+const CHAIN_NAME = { 137: 'Polygon', 56: 'BSC', 8453: 'Base' };
 const PLATFORM_DECIMALS = { polymarket: 6, opinion: 18, limitless: 6 };
 
 // Orderbook cache: books[team][side] = { pooled, polymarket, limitless, opinion }
@@ -488,15 +490,20 @@ function render() {
 
       ${(() => {
         const hasPos = userPositions && userPositions.length > 0;
-        const pos = hasPos && selectedPosition !== null ? userPositions[selectedPosition] : null;
+        const isAll = selectedPosition === -2;
+        const pos = hasPos && selectedPosition !== null && !isAll ? userPositions[selectedPosition] : null;
         const bestBid = pos ? liveBid(o.name, pos.side, pos.platform) : null;
-        const avail = pos ? pos.shares : 0;
-        const sellVal = sellAmount || avail;
-        const estReturn = bestBid && sellVal ? (sellVal * bestBid / 100).toFixed(2) : '—';
+        const avail = isAll ? userPositions.reduce((s, p) => s + p.shares, 0) : (pos ? pos.shares : 0);
+        const sellVal = isAll ? avail : (sellAmount || avail);
+        const estReturn = isAll
+          ? userPositions.reduce((s, p) => { const b = liveBid(o.name, p.side, p.platform); return s + (b ? p.shares * b / 100 : 0); }, 0).toFixed(2)
+          : (bestBid && sellVal ? (sellVal * bestBid / 100).toFixed(2) : '—');
+        const canSell = isAll ? hasPos : !!pos;
         return `
       <div class="field-label">Your Position</div>
       <select class="amount-input" style="font-size:14px;padding:12px 14px;" onchange="selectPosition(parseInt(this.value))">
         ${!hasPos ? '<option value="-1">No positions</option>' :
+        (userPositions.length > 1 ? '<option value="-2"'+(isAll?' selected':'')+'>All positions ('+userPositions.length+')</option>' : '') +
         userPositions.map((p, i) => {
           const pl = PLATFORMS[p.platform] || {name: p.platform};
           return '<option value="'+i+'" '+(selectedPosition === i ? 'selected' : '')+'>'+pl.name+' · '+p.side.toUpperCase()+' @ '+(p.buy_price * 100).toFixed(1)+'¢ · '+p.shares.toFixed(2)+' shares</option>';
@@ -504,23 +511,23 @@ function render() {
       </select>
 
       <div class="field-label" style="margin-top:16px;">Amount</div>
-      <input type="number" class="amount-input" id="sellAmount" placeholder="${avail ? avail.toFixed(2) : '0'}" value="${sellAmount || ''}" oninput="onSellAmountInput(this)" ${!pos ? 'disabled' : ''} />
-      <div class="balance-line">Available: <b>${avail ? avail.toFixed(2) : '0'} shares</b></div>
+      <input type="number" class="amount-input" id="sellAmount" placeholder="${avail ? avail.toFixed(2) : '0'}" value="${isAll ? '' : (sellAmount || '')}" oninput="onSellAmountInput(this)" ${!canSell || isAll ? 'disabled' : ''} />
+      <div class="balance-line">Available: <b>${avail ? avail.toFixed(2) : '0'} shares</b>${isAll ? ' across '+userPositions.length+' platforms' : ''}</div>
 
       <div class="quick-btns">
-        <button class="quick-btn" ${!pos ? 'disabled' : ''} onclick="setSellAmount(${Math.floor(avail * 0.25 * 100) / 100})">25%</button>
-        <button class="quick-btn" ${!pos ? 'disabled' : ''} onclick="setSellAmount(${Math.floor(avail * 0.5 * 100) / 100})">50%</button>
-        <button class="quick-btn" ${!pos ? 'disabled' : ''} onclick="setSellAmount(${Math.floor(avail * 100) / 100})">Max</button>
+        <button class="quick-btn" ${!canSell || isAll ? 'disabled' : ''} onclick="setSellAmount(${Math.floor(avail * 0.25 * 100) / 100})">25%</button>
+        <button class="quick-btn" ${!canSell || isAll ? 'disabled' : ''} onclick="setSellAmount(${Math.floor(avail * 0.5 * 100) / 100})">50%</button>
+        <button class="quick-btn" ${!canSell || isAll ? 'disabled' : ''} onclick="setSellAmount(${Math.floor(avail * 100) / 100})">Max</button>
       </div>
 
       <div class="route-block">
         <div class="route-detail">
-          <div class="route-row"><span>Best Bid</span><span class="val">${bestBid ? bestBid.toFixed(1) + '¢' : '—'}</span></div>
+          <div class="route-row"><span>Best Bid</span><span class="val">${isAll ? '—' : (bestBid ? bestBid.toFixed(1) + '¢' : '—')}</span></div>
           <div class="route-row" style="font-weight:600;color:#111;"><span>Est. Return</span><span class="val">$${estReturn}</span></div>
         </div>
       </div>
 
-      <button class="submit-btn" style="background:#dc2626;" onclick="openChainSelectModal('sell', (c) => submitSellOrder(c))" ${!pos ? 'disabled' : ''}>Sell</button>
+      <button class="submit-btn" style="background:#dc2626;" onclick="openChainSelectModal('sell', (c) => selectedPosition === -2 ? submitBatchSell(c) : submitSellOrder(c))" ${!canSell ? 'disabled' : ''}>Sell</button>
       `;
       })()}
       `}
@@ -693,7 +700,7 @@ async function submitSellOrder(toChainId) {
 
   // No bridge if proceeds go to the same chain as the platform
   const sameChain = toChainId === posChain;
-  openTxModal('sell', sameChain);
+  openTxModal('sell', sameChain, CHAIN_NAME[toChainId] || 'Base');
   setTxStep('approving_sell');
 
   try {
@@ -714,8 +721,9 @@ async function submitSellOrder(toChainId) {
         }
       }
 
-      // Same chain (Base) → approve Router contract; cross-chain → approve relayer EOA
-      const operatorAddr = (posChain === 8453) ? cfg.router_address : cfg.relayer_address;
+      // Always approve Router on platform chain
+      const chainRouters = cfg.chain_routers || {};
+      const operatorAddr = chainRouters[String(posChain)] || cfg.router_address;
 
       // Check if operator is approved on CTF
       const isApprovedData = '0xe985e9c5' +
@@ -816,6 +824,165 @@ async function submitSellOrder(toChainId) {
   }
 }
 
+// --- Batch sell flow ---
+async function submitBatchSell(toChainId) {
+  if (!walletAddress) { alert('Connect wallet first'); return; }
+  if (!userPositions || userPositions.length === 0) { alert('No positions'); return; }
+
+  const positions = [...userPositions];
+  const toChainName = CHAIN_NAME[toChainId] || 'Base';
+
+  // Open batch modal
+  openTxModal('batch_sell', false, toChainName);
+  setTxStep('batch_approving');
+
+  try {
+    const cfg = await fetch('/api/config').then(r => r.json());
+    const chainRouters = cfg.chain_routers || {};
+
+    // Group positions by chain for approval batching
+    const byChain = {};
+    for (const p of positions) {
+      const pl = PLATFORMS[p.platform] || {};
+      const chain = pl.chain || 137;
+      if (!byChain[chain]) byChain[chain] = [];
+      byChain[chain].push(p);
+    }
+
+    // Phase 1: Approve Router on each chain's CTF
+    for (const [chainIdStr, chainPositions] of Object.entries(byChain)) {
+      const chainId = parseInt(chainIdStr);
+      const chainHex = CHAIN_HEX[chainId] || '0x89';
+      const chainScan = CHAIN_SCAN[chainId] || 'polygonscan.com';
+
+      // Skip approval for opinion (shares on smart wallet)
+      const nonOpinion = chainPositions.filter(p => p.platform !== 'opinion');
+      if (nonOpinion.length === 0) continue;
+
+      // Switch chain
+      setTxMsg(`Switching to ${CHAIN_NAME[chainId] || chainId}...`);
+      const curChain = await window.ethereum.request({ method: 'eth_chainId' });
+      if (curChain !== chainHex) {
+        try {
+          await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: chainHex }] });
+        } catch (switchErr) {
+          if (switchErr.code === 4902) throw new Error(`Please add chain ${chainId} to your wallet`);
+          throw switchErr;
+        }
+      }
+
+      // Approve each unique CTF on this chain
+      const approvedCtfs = new Set();
+      for (const p of nonOpinion) {
+        const ctfAddr = PLATFORM_CTF[p.platform] || PLATFORM_CTF.polymarket;
+        if (approvedCtfs.has(ctfAddr)) continue;
+        approvedCtfs.add(ctfAddr);
+
+        const operatorAddr = chainRouters[String(chainId)] || cfg.router_address;
+        const isApprovedData = '0xe985e9c5' +
+          walletAddress.slice(2).toLowerCase().padStart(64, '0') +
+          operatorAddr.slice(2).toLowerCase().padStart(64, '0');
+        const approvedHex = await window.ethereum.request({
+          method: 'eth_call',
+          params: [{ to: ctfAddr, data: isApprovedData }, 'latest'],
+        });
+        const isApproved = approvedHex && approvedHex.length > 2 && BigInt(approvedHex) > 0n;
+
+        if (!isApproved) {
+          setTxMsg(`Approving on ${CHAIN_NAME[chainId]}...`);
+          const approveData = '0xa22cb465' +
+            operatorAddr.slice(2).toLowerCase().padStart(64, '0') +
+            '0000000000000000000000000000000000000000000000000000000000000001';
+          const approveTx = await window.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [{ from: walletAddress, to: ctfAddr, data: approveData }],
+          });
+          let receipt = null;
+          while (!receipt) {
+            await new Promise(r => setTimeout(r, 2000));
+            receipt = await window.ethereum.request({ method: 'eth_getTransactionReceipt', params: [approveTx] });
+          }
+          if (receipt.status !== '0x1') throw new Error(`Approval failed on ${CHAIN_NAME[chainId]}`);
+        }
+      }
+    }
+
+    // Phase 2: Fire sell orders sequentially
+    setTxStep('batch_selling');
+    const sellOrders = [];
+    for (let i = 0; i < positions.length; i++) {
+      const p = positions[i];
+      const plName = (PLATFORMS[p.platform] || {}).name || p.platform;
+      setTxMsg(`Selling on ${plName} (${i + 1}/${positions.length})...`);
+
+      const resp = await fetch('/api/sell', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: p.order_id, amount: p.shares, to_chain: toChainId }),
+      });
+      const sellOrder = await resp.json();
+      if (sellOrder.error) {
+        setTxMsg(`${plName}: ${sellOrder.error}`);
+        await new Promise(r => setTimeout(r, 1000));
+        continue; // skip failed, proceed with others
+      }
+      sellOrders.push({ ...sellOrder, platformName: plName });
+      // Small delay between calls to avoid nonce collisions
+      if (i < positions.length - 1) await new Promise(r => setTimeout(r, 500));
+    }
+
+    if (sellOrders.length === 0) {
+      setTxFailed('batch_selling', 'All sell orders failed');
+      return;
+    }
+
+    // Phase 3: Poll all sell orders until all complete
+    setTxStep('batch_settling');
+    const pending = new Set(sellOrders.map(o => o.id));
+    let totalProceeds = 0;
+    let totalShares = 0;
+
+    while (pending.size > 0) {
+      await new Promise(r => setTimeout(r, 5000));
+
+      for (const so of sellOrders) {
+        if (!pending.has(so.id)) continue;
+        try {
+          const st = await fetch(`/api/order/${so.id}`).then(r => r.json());
+
+          if (st.status === 'sell_settled' || st.status === 'bridging_back') {
+            setTxStep('batch_bridging');
+          }
+
+          if (st.status === 'completed') {
+            const dec = PLATFORM_DECIMALS[positions.find(p => p.order_id === so.buy_order_id)?.platform] || 6;
+            totalProceeds += (st.settle_results?.proceeds || 0) / (10 ** dec);
+            totalShares += (st.shares_amount || 0) / (10 ** dec);
+            pending.delete(so.id);
+          } else if (st.status === 'trade_failed' || st.status === 'bridge_failed') {
+            pending.delete(so.id);
+          }
+        } catch {}
+      }
+
+      // Update message with progress
+      const done = sellOrders.length - pending.size;
+      setTxMsg(`${done}/${sellOrders.length} orders complete...`);
+    }
+
+    // Done
+    const msg = totalProceeds > 0
+      ? `Sold ${totalShares.toFixed(2)} shares across ${sellOrders.length} platforms → $${totalProceeds.toFixed(2)} USDC`
+      : `Sold across ${sellOrders.length} platforms`;
+    setTxDone(msg);
+    loadPositions();
+    fetchBalance();
+
+  } catch (e) {
+    setTxFailed('batch_approving', e.message || String(e));
+  }
+}
+
 // --- Balance ---
 async function fetchBalance() {
   if (!walletAddress || !window.ethereum) { userBalance = null; return; }
@@ -849,7 +1016,8 @@ async function submitOrder(fromChainId) {
   const o = event.outcomes[selectedOutcome];
   const budget = routeResult.total_spent;
   const cfg = await fetch('/api/config').then(r => r.json());
-  const routerAddr = cfg.router_address;
+  const chainRouters = cfg.chain_routers || {};
+  const routerAddr = chainRouters[String(fromChainId)] || cfg.router_address;
   if (!routerAddr) { alert('Router not configured'); return; }
 
   const primaryPlatform = routeResult.per_platform ? Object.keys(routeResult.per_platform)[0] : '';
@@ -860,10 +1028,10 @@ async function submitOrder(fromChainId) {
   const fromScan = CHAIN_SCAN[fromChainId] || 'basescan.org';
   const stableAddr = CHAIN_STABLE[fromChainId] || USDC_ADDRESS;
   const stableDec = CHAIN_DECIMALS[fromChainId] || 6;
-  // Same chain on Base → approve Router; otherwise approve relayer EOA
-  const spenderAddr = (fromChainId === 8453) ? routerAddr : cfg.relayer_address;
+  // Always approve Router on the source chain
+  const spenderAddr = routerAddr;
 
-  openTxModal('buy', sameChain);
+  openTxModal('buy', sameChain, CHAIN_NAME[platformChain] || 'Base');
   setTxStep('approving');
 
   try {

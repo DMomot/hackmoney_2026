@@ -2795,7 +2795,7 @@
     "shares_amount": 9620000000000000000,
     "pull_tx": "skipped_opinion",
     "to_chain": 137,
-    "status": "sell_matched",
+    "status": "completed",
     "created_at": "2026-02-08T01:31:05.373034+00:00",
     "trade_results": {
       "opinion": {
@@ -2806,6 +2806,865 @@
         "balance_before": 1208530974871924154,
         "order_params": {}
       }
+    },
+    "settle_results": {
+      "done": true,
+      "balance_before": 1208530974871924154,
+      "balance_after": 2198080974871924154,
+      "proceeds": 989550000000000000
+    },
+    "bridge_back_tx": "0x76363fc10a9bccc36d69f43452a409ddddbab0f7c6e5fc78e3b5ae9042255b2d",
+    "bridge_back_amount": 989550000000000000
+  },
+  {
+    "id": "1c169aa0",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "England",
+    "side": "yes",
+    "budget": 3,
+    "route": {
+      "direction": "buy",
+      "budget": 3,
+      "total_spent": 3,
+      "total_qty": 21.4286,
+      "avg_price": 0.14,
+      "avg_price_cents": 14,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 3,
+          "qty": 21.4286,
+          "avg_price": 0.14,
+          "avg_price_cents": 14,
+          "market_id": 558935,
+          "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.14,
+          "price_cents": 14,
+          "size": 21.4286,
+          "cost": 3
+        }
+      ]
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "558935",
+        "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+        "spent": 3,
+        "qty": 21.4286
+      }
+    },
+    "status": "failed",
+    "approve_tx_hash": "0x8b8204bd9f14810f3d4d5f588ef5aa9f859c1f1bf9b076c0ea497f95e72c8fe3",
+    "from_chain": 56,
+    "tx_hash": "0x6192089a3adc05320b30ddc5cb749f5cba6e8d4c6e71c1760ce5c4bc1aa2beec",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T01:47:13.514582+00:00",
+    "bridge_tx": "0x23bd840651da4d33d1d90967d844c49ebbf804729781f911afa5ccb1cb9c2222"
+  },
+  {
+    "id": "5b4f65c1",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "England",
+    "side": "yes",
+    "budget": 3,
+    "route": {
+      "direction": "buy",
+      "budget": 3,
+      "total_spent": 3,
+      "total_qty": 21.4286,
+      "avg_price": 0.14,
+      "avg_price_cents": 14,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 3,
+          "qty": 21.4286,
+          "avg_price": 0.14,
+          "avg_price_cents": 14,
+          "market_id": 558935,
+          "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.14,
+          "price_cents": 14,
+          "size": 21.4286,
+          "cost": 3
+        }
+      ]
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "558935",
+        "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+        "spent": 3,
+        "qty": 21.4286
+      }
+    },
+    "status": "killed",
+    "approve_tx_hash": null,
+    "from_chain": 56,
+    "tx_hash": "0xe7153d8ed5cc82b82ed4b61ab3e12dfb3bab49532c3a4587fa206f6d8b7b0986",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T01:50:45.602512+00:00",
+    "bridge_tx": "0xfbf35d307ccc722a74bc9050bfb51d4f13a6f99fd971f78a107e97e270efd49c",
+    "trade_retries": 99,
+    "bridge_retries": 99
+  },
+  {
+    "id": "0426ec14",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "England",
+    "side": "yes",
+    "budget": 3,
+    "route": {
+      "direction": "buy",
+      "budget": 3,
+      "total_spent": 3,
+      "total_qty": 21.4286,
+      "avg_price": 0.14,
+      "avg_price_cents": 14,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 3,
+          "qty": 21.4286,
+          "avg_price": 0.14,
+          "avg_price_cents": 14,
+          "market_id": 558935,
+          "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.14,
+          "price_cents": 14,
+          "size": 21.4286,
+          "cost": 3
+        }
+      ]
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "558935",
+        "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+        "spent": 3,
+        "qty": 21.4286
+      }
+    },
+    "status": "failed",
+    "approve_tx_hash": null,
+    "from_chain": 56,
+    "tx_hash": "0x6eacc6bab917f57734be689653c5639ea8aaed1b0cc61c962eef5437dea7b2fc",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T01:52:46.300381+00:00",
+    "error": "{'code': -32000, 'message': 'nonce too low: next nonce 98, tx nonce 97'}"
+  },
+  {
+    "id": "3515e6b0",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "England",
+    "side": "yes",
+    "budget": 3,
+    "route": {
+      "direction": "buy",
+      "budget": 3,
+      "total_spent": 3,
+      "total_qty": 21.4286,
+      "avg_price": 0.14,
+      "avg_price_cents": 14,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 3,
+          "qty": 21.4286,
+          "avg_price": 0.14,
+          "avg_price_cents": 14,
+          "market_id": 558935,
+          "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.14,
+          "price_cents": 14,
+          "size": 21.4286,
+          "cost": 3
+        }
+      ]
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "558935",
+        "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+        "spent": 3,
+        "qty": 21.4286
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": null,
+    "from_chain": 56,
+    "tx_hash": "0xd414d01631c89ec0f4c372bb75102fa60d94621094a35fbd59468d80851bc3af",
+    "receiving_tx_hash": "0xfd7f6c39e9e34211b43cc05f1772c2e523349099108a5388d21a446e2a492f84",
+    "receiving_chain_id": 137,
+    "created_at": "2026-02-08T01:54:30.363403+00:00",
+    "bridge_tx": "0x14aa05013e2c9529b841931e5744f00cd62e2dc394b12bfa3b6ae9a7bc01ab02",
+    "trade_results": {
+      "polymarket": {
+        "order_id": "0xd694379a3e090c41622a265fec2f12550069ef449aef349eedd8e6e53e0240ae",
+        "status": "matched",
+        "order_params": {
+          "salt": 1086167048,
+          "maker": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "signer": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "taker": "0x0000000000000000000000000000000000000000",
+          "tokenId": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+          "makerAmount": "2990000",
+          "takerAmount": "21357100",
+          "expiration": "0",
+          "nonce": "0",
+          "feeRateBps": "0",
+          "side": "BUY",
+          "signatureType": null,
+          "signature": "0xf6635d7b9c20cdd3fae3c5890a6222d3a9a7e104fce8841c0eb645dcaee5b0b833f41251fc1e98c2502aacfd9d08f89ccacf1325ff6cb164339c7ee74ed9cf5d1c",
+          "neg_risk": true,
+          "market_id": 558935,
+          "price": 0.14,
+          "amount": 21.42,
+          "order_amount": 2.99
+        }
+      }
+    },
+    "transfer_results": {
+      "polymarket": {
+        "tx_hash": "0x266cf200be7ef8409336547cb93953281f340193dc31786a9910fe4ecf63cad2",
+        "success": true,
+        "amount": 21357141
+      }
     }
+  },
+  {
+    "id": "301d418f",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "England",
+    "side": "yes",
+    "budget": 3,
+    "route": {
+      "direction": "buy",
+      "budget": 3,
+      "total_spent": 3,
+      "total_qty": 21.4286,
+      "avg_price": 0.14,
+      "avg_price_cents": 14,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 3,
+          "qty": 21.4286,
+          "avg_price": 0.14,
+          "avg_price_cents": 14,
+          "market_id": 558935,
+          "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.14,
+          "price_cents": 14,
+          "size": 21.4286,
+          "cost": 3
+        }
+      ]
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "558935",
+        "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+        "spent": 3,
+        "qty": 21.4286
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": null,
+    "from_chain": 56,
+    "tx_hash": "0x6e91887f7606dcba240b669f7afdaa4ec5c0e27ff45e98e043813f549c271e33",
+    "receiving_tx_hash": "0xdbb2af8931978f00c9fb1a59b13f786f9fc7e5d2de446e3cae82eae5a216afb3",
+    "receiving_chain_id": 137,
+    "created_at": "2026-02-08T02:00:55.456394+00:00",
+    "bridge_tx": "0xcc3f53d67af12561df29e2ad38e701ba4af95c64e4252495e7acb7edab8fef2e",
+    "trade_results": {
+      "polymarket": {
+        "order_id": "0x6e192f67f9b128aa7359dcf5ec38fa80bba0babaceee5e39b8d682ff87264e07",
+        "status": "matched",
+        "order_params": {
+          "salt": 191823275,
+          "maker": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "signer": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "taker": "0x0000000000000000000000000000000000000000",
+          "tokenId": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+          "makerAmount": "2990000",
+          "takerAmount": "21357100",
+          "expiration": "0",
+          "nonce": "0",
+          "feeRateBps": "0",
+          "side": "BUY",
+          "signatureType": null,
+          "signature": "0x67114f099d0d62afda4b9c6e1b16894a527c535bd86c69a2da9f8a959de9086a097e20cdcc4ae3b41d689db1a70ce701375d7f838cdbb9add5461fcd58825b9c1c",
+          "neg_risk": true,
+          "market_id": 558935,
+          "price": 0.14,
+          "amount": 21.42,
+          "order_amount": 2.99
+        }
+      }
+    },
+    "transfer_results": {
+      "polymarket": {
+        "tx_hash": "0xcf8fa999a67cca7348120bfc38883eaf9481378032ffd25f56e074a8207481b3",
+        "success": true,
+        "amount": 21357141
+      }
+    }
+  },
+  {
+    "id": "1ad57efa",
+    "direction": "sell",
+    "buy_order_id": "a9010d3f",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "England",
+    "side": "yes",
+    "platforms": {
+      "polymarket": {
+        "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+        "market_id": "558935"
+      }
+    },
+    "shares_amount": 64000000,
+    "pull_tx": "0x44fd266913ddf3dce05ee11ed16c5ce8f38c15ff29069a5fdbbffd3ea4ac4a7e",
+    "to_chain": 56,
+    "status": "killed",
+    "created_at": "2026-02-08T02:02:41.528954+00:00",
+    "trade_results": {
+      "polymarket": {
+        "order_id": "0xfc54729e5cca907c202df3d5e5ce7e414acf1eb699cbb7a543670e7b84639ba5",
+        "status": "matched",
+        "price": 0.13,
+        "amount": 64.0,
+        "balance_before": 2928689,
+        "order_params": {
+          "salt": 413777695,
+          "maker": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "signer": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "taker": "0x0000000000000000000000000000000000000000",
+          "tokenId": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+          "makerAmount": "64000000",
+          "takerAmount": "8320000",
+          "expiration": "0",
+          "nonce": "0",
+          "feeRateBps": "0",
+          "side": "SELL",
+          "signatureType": null,
+          "signature": "0xeaa4c7087400ed864181d119fc0af3feae4d15c51f7e9e5381e8c2deb901cc823ac72990ce8346a2968bd59d7814154f4a8b2c4798d4bf9526b2e4848b1596f51b",
+          "neg_risk": true,
+          "market_id": 558935,
+          "price": 0.13,
+          "amount": 64.0,
+          "order_amount": 64.0
+        }
+      }
+    },
+    "settle_results": {
+      "done": true,
+      "balance_before": 2928689,
+      "balance_after": 11248689,
+      "proceeds": 8320000
+    },
+    "bridge_retries": 99,
+    "bridge_error": "bridge tx reverted: 0x27c0eed1cf37ac01603261dc0963364ccf9364965f7c833cbfc6d0d2aaccea21",
+    "trade_retries": 99
+  },
+  {
+    "id": "be90f7df",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "England",
+    "side": "yes",
+    "budget": 3,
+    "route": {
+      "direction": "buy",
+      "budget": 3,
+      "total_spent": 3,
+      "total_qty": 21.4286,
+      "avg_price": 0.14,
+      "avg_price_cents": 14,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 3,
+          "qty": 21.4286,
+          "avg_price": 0.14,
+          "avg_price_cents": 14,
+          "market_id": 558935,
+          "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.14,
+          "price_cents": 14,
+          "size": 21.4286,
+          "cost": 3
+        }
+      ]
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "558935",
+        "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+        "spent": 3,
+        "qty": 21.4286
+      }
+    },
+    "status": "failed",
+    "approve_tx_hash": "0x094435e9959d36a421ab204a61a3f72bf26bc8b3171cdbcd9a54ef1809f0b079",
+    "from_chain": 56,
+    "tx_hash": "0xa277055a700b0bdfdc5108e623e0473e3926c243f310bcbbe15e9bb13f218aba",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T02:08:33.490099+00:00",
+    "bridge_tx": "0x5b35c1d165f3180ef0304562612ccfa8542236dd0bbeaec81aa8459970595600"
+  },
+  {
+    "id": "a3747a73",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "England",
+    "side": "yes",
+    "budget": 3,
+    "route": {
+      "direction": "buy",
+      "budget": 3,
+      "total_spent": 3,
+      "total_qty": 21.4286,
+      "avg_price": 0.14,
+      "avg_price_cents": 14,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 3,
+          "qty": 21.4286,
+          "avg_price": 0.14,
+          "avg_price_cents": 14,
+          "market_id": 558935,
+          "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.14,
+          "price_cents": 14,
+          "size": 21.4286,
+          "cost": 3
+        }
+      ]
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "558935",
+        "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+        "spent": 3,
+        "qty": 21.4286
+      }
+    },
+    "status": "failed",
+    "approve_tx_hash": "0xa8a67053872bd12d805c9ebf1cd07c766332202d12cc1df3264ffc4ab24648ee",
+    "from_chain": 56,
+    "tx_hash": "0x2eef068421e7cd8749b434d37029dd8b3765223e99330cc6087842fc06abbbe1",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T02:10:11.693568+00:00",
+    "bridge_tx": "0xaf638a9c539e3a21fe70271fc8e6b7189ab2ba3c6ce1af014df6dff7fdb03e9f"
+  },
+  {
+    "id": "518db902",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "England",
+    "side": "yes",
+    "budget": 3,
+    "route": {
+      "direction": "buy",
+      "budget": 3,
+      "total_spent": 3,
+      "total_qty": 21.4286,
+      "avg_price": 0.14,
+      "avg_price_cents": 14,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "polymarket": {
+          "spent": 3,
+          "qty": 21.4286,
+          "avg_price": 0.14,
+          "avg_price_cents": 14,
+          "market_id": 558935,
+          "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169"
+        }
+      },
+      "fills": [
+        {
+          "platform": "polymarket",
+          "price": 0.14,
+          "price_cents": 14,
+          "size": 21.4286,
+          "cost": 3
+        }
+      ]
+    },
+    "platforms": {
+      "polymarket": {
+        "market_id": "558935",
+        "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+        "spent": 3,
+        "qty": 21.4286
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": "0x195bdf1e3c74da62424abd8cac7bea4d56e88b3eb0ca01fe2ffe5ea5e85e40bb",
+    "from_chain": 56,
+    "tx_hash": "0xa3a0b64f6a5ec39a290c4da8b1d586151f02cfa4917840f2194a041819de24f5",
+    "receiving_tx_hash": "0xfb5e806a83d421f01afca8e0dbe3d8e609f5997dbb7f5ff62c5eef676c3a0f4c",
+    "receiving_chain_id": 137,
+    "created_at": "2026-02-08T02:15:36.121012+00:00",
+    "bridge_tx": "0xec33770df1b30a285867ffb00d5e519155a34a1d4290b2820a98a8e17ca2e64e",
+    "trade_results": {
+      "polymarket": {
+        "order_id": "0x0a5191fc996da8f95340748e43b2b24316a11acbfea3ed77c121bf6e0f207f44",
+        "status": "matched",
+        "order_params": {
+          "salt": 657690594,
+          "maker": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "signer": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "taker": "0x0000000000000000000000000000000000000000",
+          "tokenId": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+          "makerAmount": "2990000",
+          "takerAmount": "21357100",
+          "expiration": "0",
+          "nonce": "0",
+          "feeRateBps": "0",
+          "side": "BUY",
+          "signatureType": null,
+          "signature": "0xd2b8200aca7eeb8573b8e2e14ad823a3e85a08594156884a1f2f260946d157f237908d125ef77dcfe533522eed167dbd3f7b3615c7652aeb7d9fb8e878b161e41b",
+          "neg_risk": true,
+          "market_id": 558935,
+          "price": 0.14,
+          "amount": 21.42,
+          "order_amount": 2.99
+        }
+      }
+    },
+    "transfer_results": {
+      "polymarket": {
+        "tx_hash": "0x42d250cc5b62810752364ed3dec282ae3ff2b05b849ec5567a59901f2758407a",
+        "success": true,
+        "amount": 21357141
+      }
+    }
+  },
+  {
+    "id": "bd95f1c3",
+    "direction": "sell",
+    "buy_order_id": "a9010d3f",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "England",
+    "side": "yes",
+    "platforms": {
+      "polymarket": {
+        "token_id": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+        "market_id": "558935"
+      }
+    },
+    "shares_amount": 21360000,
+    "pull_tx": "0x31b12f6c6cc2ad8ac5eadd26045f2e21aec8de375bee88978e94a5dba60ef577",
+    "to_chain": 56,
+    "status": "completed",
+    "created_at": "2026-02-08T02:16:49.415085+00:00",
+    "trade_results": {
+      "polymarket": {
+        "order_id": "0x0b902a459eee49b5bbc603b2592a2672ba65e81e289cbf89d73a5bebb67b7bbd",
+        "status": "matched",
+        "price": 0.13,
+        "amount": 21.36,
+        "balance_before": 241107,
+        "order_params": {
+          "salt": 1648619296,
+          "maker": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "signer": "0x47874074Ad9962BF77b2c6946F17E5802F9199C2",
+          "taker": "0x0000000000000000000000000000000000000000",
+          "tokenId": "115556263888245616435851357148058235707004733438163639091106356867234218207169",
+          "makerAmount": "21360000",
+          "takerAmount": "2776800",
+          "expiration": "0",
+          "nonce": "0",
+          "feeRateBps": "0",
+          "side": "SELL",
+          "signatureType": null,
+          "signature": "0x477d0d3d538405d7a86ca2e2e3486bf4677899feeb290e7a22e36ac45fb3b84c4c19655aa4d73fc905748852ddbeb812b38f3a3ed3377117081719523b09966a1b",
+          "neg_risk": true,
+          "market_id": 558935,
+          "price": 0.13,
+          "amount": 21.36,
+          "order_amount": 21.36
+        }
+      }
+    },
+    "settle_results": {
+      "done": true,
+      "balance_before": 241107,
+      "balance_after": 3017907,
+      "proceeds": 2776800
+    },
+    "bridge_back_tx": "0xbc4f529f90234ba6b6b210c24a06e7cf10afeb1ee929cfeefdc9cd637b30a9ca",
+    "bridge_back_amount": 2770000,
+    "receiving_tx_hash": "0x231eaafcca8d03f9f3d271c43cadd69ebaf64a1cff4077021b4e6524ada88cfe",
+    "receiving_chain_id": 56
+  },
+  {
+    "id": "375d25fe",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Ecuador",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 250,
+      "avg_price": 0.008,
+      "avg_price_cents": 0.8,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "limitless": {
+          "spent": 2,
+          "qty": 250,
+          "avg_price": 0.008,
+          "avg_price_cents": 0.8,
+          "market_id": "ecuador-1765296582376",
+          "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079"
+        }
+      },
+      "fills": [
+        {
+          "platform": "limitless",
+          "price": 0.008,
+          "price_cents": 0.8,
+          "size": 250,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Team Ecuador not found in fifa-world-cup-2026"
+      }
+    },
+    "platforms": {
+      "limitless": {
+        "market_id": "ecuador-1765296582376",
+        "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079",
+        "spent": 2,
+        "qty": 250
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0x86685f29020a72aa078facda7cda54d6969f44d57989ca34a4100961efd4f6f3",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T02:18:40.818649+00:00",
+    "trade_results": {
+      "limitless": {
+        "order_id": "3db10889-ced3-4a3f-8067-5a53946e8bb6",
+        "status": "MATCHED",
+        "price": 0.008,
+        "amount": 2.0
+      }
+    },
+    "trade_retries": 1,
+    "trade_error": "{'limitless': 'Limitless order failed: 400 {\"message\":\"Insufficient collateral balance for this order.\"}'}",
+    "transfer_results": {
+      "limitless": {
+        "tx_hash": "0x3bfe57a05758f8160cf2774aa3961fb033fbea959f55ee616b6cf7c0af5a889a",
+        "success": true,
+        "amount": 242500000
+      }
+    }
+  },
+  {
+    "id": "b055146a",
+    "direction": "sell",
+    "buy_order_id": "217b156c",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Ecuador",
+    "side": "yes",
+    "platforms": {
+      "limitless": {
+        "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079",
+        "market_id": "ecuador-1765296582376"
+      }
+    },
+    "shares_amount": 242500000,
+    "pull_tx": "0xb5dcfb2ca07d12a7b52c70748388337a5115dc8130b89b88efee4118547635af",
+    "to_chain": 137,
+    "status": "trade_failed",
+    "created_at": "2026-02-08T02:19:31.621900+00:00",
+    "trade_results": {
+      "limitless": {
+        "error": "order value $0.48 below limitless minimum $1.00"
+      }
+    },
+    "trade_retries": 5,
+    "trade_error": "order value $0.48 below limitless minimum $1.00"
+  },
+  {
+    "id": "8253b908",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Ecuador",
+    "side": "yes",
+    "budget": 3,
+    "route": {
+      "direction": "buy",
+      "budget": 3,
+      "total_spent": 3,
+      "total_qty": 375,
+      "avg_price": 0.008,
+      "avg_price_cents": 0.8,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "limitless": {
+          "spent": 3,
+          "qty": 375,
+          "avg_price": 0.008,
+          "avg_price_cents": 0.8,
+          "market_id": "ecuador-1765296582376",
+          "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079"
+        }
+      },
+      "fills": [
+        {
+          "platform": "limitless",
+          "price": 0.008,
+          "price_cents": 0.8,
+          "size": 375,
+          "cost": 3
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Team Ecuador not found in fifa-world-cup-2026"
+      }
+    },
+    "platforms": {
+      "limitless": {
+        "market_id": "ecuador-1765296582376",
+        "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079",
+        "spent": 3,
+        "qty": 375
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": "0x9088cc98e80ad0922162494d40f89a37e36ba0a722f1a25fce95ac252db0ce5b",
+    "from_chain": 56,
+    "tx_hash": "0xab55ae08731cb3009ef76f3582081a27520e460fc1071792ea43a88a55262d21",
+    "receiving_tx_hash": "0x653574a9c19939784e18d50c22ac96689eebde9442cf7b8205db19dd2d725dad",
+    "receiving_chain_id": 8453,
+    "created_at": "2026-02-08T02:20:33.508491+00:00",
+    "bridge_tx": "0x20ed8c0eb7ae58606ba54252237e414cf165fdd8bab04e65cb71ae0fd115bd59",
+    "trade_results": {
+      "limitless": {
+        "order_id": "ab0c5462-9a98-4f2f-9d84-61c2b815130a",
+        "status": "MATCHED",
+        "price": 0.008,
+        "amount": 3.0
+      }
+    },
+    "transfer_results": {
+      "limitless": {
+        "tx_hash": "0xb73ec8d4b54f0109479490411d6652d32ce01130e234b1bcd4d95d2e4b901053",
+        "success": true,
+        "amount": 606250000
+      }
+    }
+  },
+  {
+    "id": "39d75f04",
+    "direction": "sell",
+    "buy_order_id": "217b156c",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Ecuador",
+    "side": "yes",
+    "platforms": {
+      "limitless": {
+        "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079",
+        "market_id": "ecuador-1765296582376"
+      }
+    },
+    "shares_amount": 606250000,
+    "pull_tx": "0x6e0329bf87145ea8009ff907b860632ea7295c627a813ae3dfd4e4e183b54bf5",
+    "to_chain": 137,
+    "status": "killed",
+    "created_at": "2026-02-08T02:21:58.634855+00:00",
+    "trade_results": {
+      "limitless": {
+        "order_id": "528831b6-044f-43c4-8975-d2b2e8543ca1",
+        "status": "MATCHED",
+        "price": 0.002,
+        "amount": 606.25,
+        "balance_before": 731003,
+        "order_params": {}
+      }
+    },
+    "settle_results": {
+      "done": true,
+      "balance_before": 731003,
+      "balance_after": 1907128,
+      "proceeds": 1176125
+    },
+    "bridge_retries": 99,
+    "bridge_error": "{'code': -32000, 'message': 'invalid sender: invalid chain id for signer: have 8453 want 137'}",
+    "trade_retries": 99
   }
 ]
