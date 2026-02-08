@@ -226,10 +226,22 @@
 
 <script>
 const PLATFORMS = {
-  polymarket: { name: 'Polymarket', logo: '/public/polymarket.jpg' },
-  opinion:    { name: 'Opinion',    logo: '/public/opinion.jpg' },
-  limitless:  { name: 'Limitless',  logo: '/public/limitless.svg' },
+  polymarket: { name: 'Polymarket', logo: '/public/polymarket.jpg', chain: 137 },
+  opinion:    { name: 'Opinion',    logo: '/public/opinion.jpg', chain: 56 },
+  limitless:  { name: 'Limitless',  logo: '/public/limitless.svg', chain: 8453 },
 };
+
+// CTF (Conditional Tokens) per platform for ERC-1155 approvals
+const PLATFORM_CTF = {
+  polymarket: '0x4D97DCd97eC945f40cF65F87097ACe5EA0476045',
+  limitless:  '0xC9c98965297Bc527861c898329Ee280632B76e18',
+  opinion:    '0xAD1a38cEc043e70E83a3eC30443dB285ED10D774',
+};
+
+// Chain hex IDs and scanners
+const CHAIN_HEX = { 137: '0x89', 56: '0x38', 8453: '0x2105' };
+const CHAIN_SCAN = { 137: 'polygonscan.com', 56: 'bscscan.com', 8453: 'basescan.org' };
+const PLATFORM_DECIMALS = { polymarket: 6, opinion: 18, limitless: 6 };
 
 // Orderbook cache: books[team][side] = { pooled, polymarket, limitless, opinion }
 let books = {};
@@ -265,6 +277,7 @@ let event = null;
 let userPositions = null;
 let selectedPosition = null;
 let sellAmount = null;
+let userBalance = null; // USDC balance in human-readable
 
 // Per-team platform availability: { "Spain": ["polymarket","limitless","opinion"], ... }
 let teamPlatforms = {};
@@ -418,7 +431,7 @@ function render() {
 
       <div class="field-label">Amount</div>
       <input type="number" class="amount-input" id="amount" placeholder="0" oninput="onAmountInput(this)" />
-      <div class="balance-line">Balance: <b>1.99 USDC</b></div>
+      <div class="balance-line">Balance: <b>${userBalance !== null ? userBalance.toFixed(2) : '—'} USDC</b></div>
 
       <div class="quick-btns">
         <button class="quick-btn" onclick="setAmount(10)">10</button>
@@ -457,7 +470,7 @@ function render() {
         <span class="val">${routeResult ? '$' + routeResult.total_qty.toFixed(2) : '$0.00'}</span>
       </div>
 
-      <button class="submit-btn" id="buyBtn" onclick="submitOrder()">Buy</button>
+      <button class="submit-btn" id="buyBtn" onclick="openChainSelectModal('buy', (c) => submitOrder(c))">Buy</button>
 
       ` : `
       <!-- SELL PANEL -->
@@ -507,7 +520,7 @@ function render() {
         </div>
       </div>
 
-      <button class="submit-btn" style="background:#dc2626;" onclick="submitSellOrder()" ${!pos ? 'disabled' : ''}>Sell</button>
+      <button class="submit-btn" style="background:#dc2626;" onclick="openChainSelectModal('sell', (c) => submitSellOrder(c))" ${!pos ? 'disabled' : ''}>Sell</button>
       `;
       })()}
       `}
@@ -663,10 +676,7 @@ function onSellAmountInput(el) {
   sellAmount = parseFloat(el.value) || null;
 }
 
-const POLYGON_CHAIN_ID = '0x89'; // 137
-const CTF_ADDRESS = '0x4D97DCd97eC945f40cF65F87097ACe5EA0476045';
-
-async function submitSellOrder() {
+async function submitSellOrder(toChainId) {
   if (!walletAddress) { alert('Connect wallet first'); return; }
   if (selectedPosition === null || !userPositions[selectedPosition]) { alert('Select a position'); return; }
 
@@ -674,66 +684,76 @@ async function submitSellOrder() {
   const sharesToSell = sellAmount || pos.shares;
   if (sharesToSell <= 0) { alert('Enter shares amount'); return; }
 
-  openTxModal('sell');
+  const pl = PLATFORMS[pos.platform] || {};
+  const posChain = pl.chain || 137;
+  const posChainHex = CHAIN_HEX[posChain] || '0x89';
+  const posScan = CHAIN_SCAN[posChain] || 'polygonscan.com';
+  const ctfAddr = PLATFORM_CTF[pos.platform] || PLATFORM_CTF.polymarket;
+  const toScan = CHAIN_SCAN[toChainId] || 'basescan.org';
+
+  // No bridge if proceeds go to the same chain as the platform
+  const sameChain = toChainId === posChain;
+  openTxModal('sell', sameChain);
   setTxStep('approving_sell');
 
   try {
-    // Switch to Polygon
-    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-    if (chainId !== POLYGON_CHAIN_ID) {
-      try {
-        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: POLYGON_CHAIN_ID }] });
-      } catch (switchErr) {
-        if (switchErr.code === 4902) {
-          await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{
-            chainId: POLYGON_CHAIN_ID, chainName: 'Polygon', nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
-            rpcUrls: ['https://polygon-rpc.com'], blockExplorerUrls: ['https://polygonscan.com'],
-          }] });
-        } else { throw switchErr; }
-      }
-    }
-
-    // Fetch relayer address from config
     const cfg = await fetch('/api/config').then(r => r.json());
-    const relayerAddr = cfg.relayer_address;
+    const isOpinion = pos.platform === 'opinion';
 
-    // Check if relayer is approved on CTF
-    const isApprovedData = '0xe985e9c5' +
-      walletAddress.slice(2).toLowerCase().padStart(64, '0') +
-      relayerAddr.slice(2).toLowerCase().padStart(64, '0');
-    const approvedHex = await window.ethereum.request({
-      method: 'eth_call',
-      params: [{ to: CTF_ADDRESS, data: isApprovedData }, 'latest'],
-    });
-    const isApproved = BigInt(approvedHex) > 0n;
-
-    if (!isApproved) {
-      // setApprovalForAll(relayer, true)
-      const approveData = '0xa22cb465' +
-        relayerAddr.slice(2).toLowerCase().padStart(64, '0') +
-        '0000000000000000000000000000000000000000000000000000000000000001';
-      const approveTx = await window.ethereum.request({
-        method: 'eth_sendTransaction',
-        params: [{ from: walletAddress, to: CTF_ADDRESS, data: approveData }],
-      });
-      setTxMsg('Approving relayer on Polygon…');
-      let receipt = null;
-      while (!receipt) {
-        await new Promise(r => setTimeout(r, 2000));
-        receipt = await window.ethereum.request({ method: 'eth_getTransactionReceipt', params: [approveTx] });
+    // Opinion: shares stay on smart wallet, no approval/pull needed
+    if (!isOpinion) {
+      // Switch to platform chain (where shares live)
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      if (chainId !== posChainHex) {
+        try {
+          await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: posChainHex }] });
+        } catch (switchErr) {
+          if (switchErr.code === 4902) {
+            throw new Error(`Please add chain ${posChain} to your wallet`);
+          } else { throw switchErr; }
+        }
       }
-      if (receipt.status !== '0x1') { setTxFailed('approving_sell', 'Approval failed'); return; }
-      setTxScanLink('approving_sell', `https://polygonscan.com/tx/${approveTx}`);
+
+      // Same chain (Base) → approve Router contract; cross-chain → approve relayer EOA
+      const operatorAddr = (posChain === 8453) ? cfg.router_address : cfg.relayer_address;
+
+      // Check if operator is approved on CTF
+      const isApprovedData = '0xe985e9c5' +
+        walletAddress.slice(2).toLowerCase().padStart(64, '0') +
+        operatorAddr.slice(2).toLowerCase().padStart(64, '0');
+      const approvedHex = await window.ethereum.request({
+        method: 'eth_call',
+        params: [{ to: ctfAddr, data: isApprovedData }, 'latest'],
+      });
+      const isApproved = approvedHex && approvedHex.length > 2 && BigInt(approvedHex) > 0n;
+
+      if (!isApproved) {
+        const approveData = '0xa22cb465' +
+          operatorAddr.slice(2).toLowerCase().padStart(64, '0') +
+          '0000000000000000000000000000000000000000000000000000000000000001';
+        const approveTx = await window.ethereum.request({
+          method: 'eth_sendTransaction',
+          params: [{ from: walletAddress, to: ctfAddr, data: approveData }],
+        });
+        setTxMsg(posChain === 8453 ? 'Approving Router…' : 'Approving Relayer…');
+        let receipt = null;
+        while (!receipt) {
+          await new Promise(r => setTimeout(r, 2000));
+          receipt = await window.ethereum.request({ method: 'eth_getTransactionReceipt', params: [approveTx] });
+        }
+        if (receipt.status !== '0x1') { setTxFailed('approving_sell', 'Approval failed'); return; }
+        setTxScanLink('approving_sell', `https://${posScan}/tx/${approveTx}`);
+      }
     }
 
-    // Call POST /api/sell
+    // Call POST /api/sell with to_chain
     setTxStep('pulling');
     setTxMsg('Sending sell request…');
 
     const resp = await fetch('/api/sell', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ order_id: pos.order_id, amount: sharesToSell }),
+      body: JSON.stringify({ order_id: pos.order_id, amount: sharesToSell, to_chain: toChainId }),
     });
     const sellOrder = await resp.json();
 
@@ -742,7 +762,7 @@ async function submitSellOrder() {
       return;
     }
 
-    setTxScanLink('pulling', `https://polygonscan.com/tx/${sellOrder.pull_tx}`);
+    setTxScanLink('pulling', `https://${posScan}/tx/${sellOrder.pull_tx}`);
     setTxStep('selling');
     setTxMsg('Waiting for sell execution…');
 
@@ -756,21 +776,33 @@ async function submitSellOrder() {
         setTxStep('settling_sell');
         setTxMsg('Sell matched, waiting for USDC…');
       } else if (st.status === 'sell_settled') {
-        setTxStep('bridging_back');
-        setTxMsg('Bridging USDC back to Base…');
+        if (sameChain) {
+          setTxStep('settling_sell');
+          setTxMsg('Transferring USDC…');
+        } else {
+          setTxStep('bridging_back');
+          setTxMsg(`Bridging USDC to ${CHAINS.find(c=>c.id===toChainId)?.name||'target chain'}…`);
+        }
       } else if (st.status === 'bridging_back') {
         setTxStep('bridging_back');
         if (st.bridge_back_tx) {
-          setTxScanLink('bridging_back', `https://polygonscan.com/tx/${st.bridge_back_tx}`);
+          setTxScanLink('bridging_back', `https://${posScan}/tx/${st.bridge_back_tx}`);
         }
         setTxMsg('Bridge in progress…');
       } else if (st.status === 'completed') {
-        setTxDone('USDC delivered to your wallet on Base');
-        if (st.receiving_tx_hash) {
-          setTxScanLink('done', `https://basescan.org/tx/${st.receiving_tx_hash}`);
-        }
+        const dec = PLATFORM_DECIMALS[pos.platform] || 6;
+        const sharesSold = (st.shares_amount || 0) / (10 ** dec);
+        const proceeds = st.settle_results?.proceeds ? st.settle_results.proceeds / (10 ** dec) : 0;
+        const msg = proceeds > 0
+          ? `Sold ${sharesSold.toFixed(2)} shares → $${proceeds.toFixed(2)} USDC`
+          : 'USDC delivered to your wallet';
+        setTxDone(msg);
+        const completedScan = st.receiving_tx_hash ? `https://${toScan}/tx/${st.receiving_tx_hash}` :
+                              st.bridge_back_tx ? `https://${posScan}/tx/${st.bridge_back_tx}` : null;
+        if (completedScan) setTxScanLink('done', completedScan);
         done = true;
         loadPositions();
+        fetchBalance();
       } else if (st.status === 'trade_failed') {
         setTxFailed('selling', st.trade_error || 'Sell failed');
         done = true;
@@ -784,11 +816,33 @@ async function submitSellOrder() {
   }
 }
 
+// --- Balance ---
+async function fetchBalance() {
+  if (!walletAddress || !window.ethereum) { userBalance = null; return; }
+  try {
+    const data = '0x70a08231' + walletAddress.slice(2).toLowerCase().padStart(64, '0');
+    const hex = await window.ethereum.request({
+      method: 'eth_call',
+      params: [{ to: USDC_ADDRESS, data }, 'latest'],
+    });
+    userBalance = hex && hex.length > 2 ? Number(BigInt(hex)) / 1e6 : 0;
+  } catch { userBalance = null; }
+  renderKeepScroll();
+}
+
 // --- Buy flow ---
 const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const BASE_CHAIN_ID = '0x2105'; // 8453
 
-async function submitOrder() {
+// Stablecoin per chain
+const CHAIN_STABLE = {
+  8453: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
+  137:  '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', // USDC.e on Polygon
+  56:   '0x55d398326f99059fF775485246999027B3197955', // USDT on BSC
+};
+const CHAIN_DECIMALS = { 8453: 6, 137: 6, 56: 18 };
+
+async function submitOrder(fromChainId) {
   if (!walletAddress) { alert('Connect wallet first'); return; }
   if (!routeResult || routeResult.total_spent <= 0) { alert('Enter amount first'); return; }
 
@@ -798,39 +852,50 @@ async function submitOrder() {
   const routerAddr = cfg.router_address;
   if (!routerAddr) { alert('Router not configured'); return; }
 
-  openTxModal('buy');
+  const primaryPlatform = routeResult.per_platform ? Object.keys(routeResult.per_platform)[0] : '';
+  const platformChain = PLATFORMS[primaryPlatform]?.chain || 0;
+  // Same chain = fromChain equals platformChain (no bridge needed)
+  const sameChain = fromChainId === platformChain;
+  const fromChainHex = CHAIN_HEX[fromChainId] || '0x2105';
+  const fromScan = CHAIN_SCAN[fromChainId] || 'basescan.org';
+  const stableAddr = CHAIN_STABLE[fromChainId] || USDC_ADDRESS;
+  const stableDec = CHAIN_DECIMALS[fromChainId] || 6;
+  // Same chain on Base → approve Router; otherwise approve relayer EOA
+  const spenderAddr = (fromChainId === 8453) ? routerAddr : cfg.relayer_address;
+
+  openTxModal('buy', sameChain);
   setTxStep('approving');
 
   try {
-    // Switch to Base if needed
+    // Switch to source chain
     const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-    if (chainId !== BASE_CHAIN_ID) {
-      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+    if (chainId !== fromChainHex) {
+      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: fromChainHex }] });
     }
 
-    // Check existing allowance before approving
+    // Check existing allowance
     const allowanceData = '0xdd62ed3e' +
       walletAddress.slice(2).toLowerCase().padStart(64, '0') +
-      routerAddr.slice(2).toLowerCase().padStart(64, '0');
+      spenderAddr.slice(2).toLowerCase().padStart(64, '0');
     const allowanceHex = await window.ethereum.request({
       method: 'eth_call',
-      params: [{ to: USDC_ADDRESS, data: allowanceData }, 'latest'],
+      params: [{ to: stableAddr, data: allowanceData }, 'latest'],
     });
-    const allowance = BigInt(allowanceHex);
-    const needed = BigInt(Math.round(budget * 1e6));
+    const allowance = allowanceHex && allowanceHex.length > 2 ? BigInt(allowanceHex) : 0n;
+    const needed = BigInt(Math.round(budget * (10 ** stableDec)));
 
     let approveTx = null;
     if (allowance >= needed) {
       setTxStep('approved');
-      setTxMsg('USDC already approved');
+      setTxMsg('Already approved');
     } else {
       const approveData = '0x095ea7b3' +
-        routerAddr.slice(2).toLowerCase().padStart(64, '0') +
+        spenderAddr.slice(2).toLowerCase().padStart(64, '0') +
         needed.toString(16).padStart(64, '0');
 
       approveTx = await window.ethereum.request({
         method: 'eth_sendTransaction',
-        params: [{ from: walletAddress, to: USDC_ADDRESS, data: approveData }],
+        params: [{ from: walletAddress, to: stableAddr, data: approveData }],
       });
 
       setTxMsg('Waiting for confirmation…');
@@ -847,7 +912,7 @@ async function submitOrder() {
       if (receipt.status !== '0x1') { setTxFailed('approving', 'Approve transaction reverted'); return; }
 
       setTxStep('approved');
-      setTxScanLink('approved', `https://basescan.org/tx/${approveTx}`);
+      setTxScanLink('approved', `https://${fromScan}/tx/${approveTx}`);
     }
 
     // Relay via backend
@@ -864,21 +929,26 @@ async function submitOrder() {
         budget: budget,
         route: routeResult,
         approve_tx_hash: approveTx,
+        from_chain: fromChainId,
       }),
     });
     const order = await resp.json();
 
-    if (order.status !== 'sent') {
+    if (order.status !== 'sent' && order.status !== 'bridged') {
       setTxFailed('relaying', order.error || 'Relay failed');
       return;
     }
 
-    setTxStep('sent');
-    setTxScanLink('sent', `https://basescan.org/tx/${order.tx_hash}`);
-
-    // Poll order status
-    setTxStep('bridging');
-    setTxMsg('Waiting for bridge confirmation…');
+    if (!sameChain) {
+      setTxStep('sent');
+      setTxScanLink('sent', `https://${fromScan}/tx/${order.tx_hash}`);
+      setTxStep('bridging');
+      setTxMsg('Waiting for bridge confirmation…');
+    } else {
+      const txScan = CHAIN_SCAN[platformChain] || 'basescan.org';
+      setTxScanLink('relaying', `https://${txScan}/tx/${order.tx_hash}`);
+      setTxMsg('Transferred, placing orders…');
+    }
 
     let settled = false;
     while (!settled) {
@@ -895,16 +965,27 @@ async function submitOrder() {
         setTxStep('settling');
         setTxMsg('Waiting for settlement & transferring shares…');
       } else if (st.status === 'filled') {
-        setTxDone('Shares delivered to your wallet');
+        // Build result summary
+        let sharesTotal = 0;
         if (st.transfer_results) {
-          const txs = Object.values(st.transfer_results);
-          const tx = txs.find(t => t.tx_hash);
-          if (tx) {
-            setTxScanLink('settling', `https://polygonscan.com/tx/${tx.tx_hash}`);
+          const txs = Object.entries(st.transfer_results);
+          const entry = txs.find(([,t]) => t.tx_hash);
+          if (entry) {
+            const [pname, t] = entry;
+            const dec = PLATFORM_DECIMALS[pname] || 6;
+            sharesTotal = (t.amount || 0) / (10 ** dec);
+            const scan = CHAIN_SCAN[PLATFORMS[pname]?.chain] || 'basescan.org';
+            setTxScanLink('settling', `https://${scan}/tx/${t.tx_hash}`);
           }
         }
+        const spent = st.budget || 0;
+        const msg = sharesTotal > 0
+          ? `Spent $${spent.toFixed(2)} USDC → ${sharesTotal.toFixed(2)} shares`
+          : 'Shares delivered to your wallet';
+        setTxDone(msg);
         settled = true;
         loadPositions();
+        fetchBalance();
       } else if (st.status === 'failed') {
         setTxFailed('bridging', 'Bridge failed');
         settled = true;
@@ -920,8 +1001,9 @@ async function submitOrder() {
 
 init();
 
-// Wallet connection
-let walletAddress = null;
+// Wallet connection (global for tx-modal.js access)
+var walletAddress = null;
+window.walletAddress = null;
 
 function shortAddr(addr) {
   return addr.slice(0, 6) + '...' + addr.slice(-4);
@@ -951,6 +1033,7 @@ async function connectWallet() {
     walletAddress = accounts[0];
     localStorage.setItem('walletAddress', walletAddress);
     updateWalletBtn();
+    fetchBalance();
   } catch (e) {
     console.error('Wallet connect failed:', e);
   }
@@ -961,6 +1044,7 @@ async function connectWallet() {
   if (saved) {
     walletAddress = saved;
     updateWalletBtn();
+    fetchBalance();
   }
   if (window.ethereum) {
     window.ethereum.on('accountsChanged', (accounts) => {
@@ -968,6 +1052,7 @@ async function connectWallet() {
       if (walletAddress) localStorage.setItem('walletAddress', walletAddress);
       else localStorage.removeItem('walletAddress');
       updateWalletBtn();
+      fetchBalance();
     });
   }
 })();

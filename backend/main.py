@@ -37,9 +37,13 @@ USDC_POLYGON = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"  # USDC.e on Polygon
 USDT_BSC = "0x55d398326f99059fF775485246999027B3197955"  # USDT on BSC
 
 # Platform chain mapping
-PLATFORM_CHAIN = {"polymarket": 137, "opinion": 56}
-PLATFORM_STABLE = {"polymarket": USDC_POLYGON, "opinion": USDT_BSC}
-PLATFORM_DECIMALS = {"polymarket": 6, "opinion": 18}
+PLATFORM_CHAIN = {"polymarket": 137, "opinion": 56, "limitless": 8453}
+PLATFORM_STABLE = {"polymarket": USDC_POLYGON, "opinion": USDT_BSC, "limitless": USDC_BASE}
+PLATFORM_DECIMALS = {"polymarket": 6, "opinion": 18, "limitless": 6}
+
+# Chain → stablecoin mapping
+CHAIN_STABLE = {8453: USDC_BASE, 137: USDC_POLYGON, 56: USDT_BSC}
+CHAIN_DECIMALS = {8453: 6, 137: 6, 56: 18}
 
 # --- Polymarket trading adapter (relayer uses OWNER key) ---
 POLYGON_RPC = "https://polygon-bor-rpc.publicnode.com"
@@ -116,15 +120,54 @@ def _get_opinion_adapter():
     logger.info(f"Opinion adapter ready, wallet: {opinion_wallet}")
     return _opinion_adapter
 
+# --- Limitless trading adapter ---
+_limitless_adapter = None
+
+def _get_limitless_adapter():
+    global _limitless_adapter
+    if _limitless_adapter is not None:
+        return _limitless_adapter
+    if not RELAYER_KEY:
+        return None
+    import importlib.util, types
+    relayer_dir = os.path.join(os.path.dirname(__file__), '..', 'relayer', 'adapters')
+    if "relayer_adapters" not in sys.modules:
+        spec_b = importlib.util.spec_from_file_location("relayer_adapters.base", os.path.join(relayer_dir, "base.py"))
+        base_mod = importlib.util.module_from_spec(spec_b)
+        spec_b.loader.exec_module(base_mod)
+        pkg = types.ModuleType("relayer_adapters")
+        pkg.__path__ = [relayer_dir]
+        sys.modules["relayer_adapters"] = pkg
+        sys.modules["relayer_adapters.base"] = base_mod
+    spec_l = importlib.util.spec_from_file_location("relayer_adapters.limitless", os.path.join(relayer_dir, "limitless.py"),
+                                                     submodule_search_locations=[])
+    lim_mod = importlib.util.module_from_spec(spec_l)
+    lim_mod.__package__ = "relayer_adapters"
+    sys.modules["relayer_adapters.limitless"] = lim_mod
+    spec_l.loader.exec_module(lim_mod)
+    _limitless_adapter = lim_mod.LimitlessAdapter(
+        private_key=RELAYER_KEY,
+        rpc_url=BASE_RPC,
+    )
+    _limitless_adapter.authenticate()
+    relayer_addr = Account.from_key(RELAYER_KEY).address
+    logger.info(f"Limitless adapter ready, relayer: {relayer_addr}")
+    return _limitless_adapter
+
 def _get_adapter(platform: str):
     """Get adapter by platform name."""
     if platform == "polymarket":
         return _get_poly_adapter()
     elif platform == "opinion":
         return _get_opinion_adapter()
+    elif platform == "limitless":
+        return _get_limitless_adapter()
     return None
 
-ROUTER_ABI = json.loads('[{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"address","name":"from","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"address","name":"lifiDiamond","type":"address"},{"internalType":"bytes","name":"lifiData","type":"bytes"},{"internalType":"bytes","name":"metadata","type":"bytes"}],"name":"bridgeViaLiFi","outputs":[],"stateMutability":"nonpayable","type":"function"}]')
+ROUTER_ABI = json.loads('[{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"address","name":"from","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"address","name":"lifiDiamond","type":"address"},{"internalType":"bytes","name":"lifiData","type":"bytes"},{"internalType":"bytes","name":"metadata","type":"bytes"}],"name":"bridgeViaLiFi","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"address","name":"from","type":"address"},{"internalType":"uint8","name":"platformId","type":"uint8"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"bytes","name":"metadata","type":"bytes"}],"name":"transferERC20","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"address","name":"from","type":"address"},{"internalType":"uint8","name":"platformId","type":"uint8"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"bytes","name":"metadata","type":"bytes"}],"name":"transferERC1155","outputs":[],"stateMutability":"nonpayable","type":"function"}]')
+
+# Platform IDs in Router contract
+PLATFORM_ROUTER_ID = {"polymarket": 1, "opinion": 2, "limitless": 3}
 
 ORDERS_FILE = "static/orders.json"
 
@@ -267,6 +310,8 @@ async def route(
     for name, res in zip(tasks.keys(), results):
         if isinstance(res, Exception):
             errors[name] = str(res)
+        elif isinstance(res, dict) and "error" in res:
+            errors[name] = res["error"]
         else:
             full_books.append(res)
 
@@ -306,87 +351,218 @@ async def create_order(body: dict = Body(...)):
         "platforms": platforms,
         "status": "pending",
         "approve_tx_hash": body.get("approve_tx_hash"),
+        "from_chain": body.get("from_chain", 8453),
         "tx_hash": None,
         "receiving_tx_hash": None,
         "receiving_chain_id": None,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
-    # Relay: get LiFi quote, then call router.bridgeViaLiFi
+    # Relay: pull stablecoin from user, bridge if needed
     try:
         router_addr = Web3.to_checksum_address(ROUTER_ADDRESS)
         user_addr = Web3.to_checksum_address(body["wallet"])
-        amount_raw = int(body["budget"] * 1e6)  # USDC 6 decimals
 
-        # Check user USDC balance on Base
-        usdc_abi = [{"inputs": [{"name": "account", "type": "address"}], "name": "balanceOf", "outputs": [{"type": "uint256"}], "type": "function"}]
-        usdc_contract = w3.eth.contract(address=Web3.to_checksum_address(USDC_BASE), abi=usdc_abi)
-        user_balance = usdc_contract.functions.balanceOf(user_addr).call()
-        if user_balance < amount_raw:
-            order["status"] = "failed"
-            order["error"] = f"Insufficient USDC: have {user_balance / 1e6:.4f}, need {amount_raw / 1e6:.4f}"
-            orders = _load_orders()
-            orders.append(order)
-            _save_orders(orders)
-            return order
+        # Determine source chain (from user selection, default Base)
+        from_chain = body.get("from_chain", 8453)
+        from_token = CHAIN_STABLE.get(from_chain, USDC_BASE)
+        from_decimals = CHAIN_DECIMALS.get(from_chain, 6)
+        amount_raw = int(body["budget"] * (10 ** from_decimals))
 
         # Detect target chain from platforms in route
         primary_platform = next(iter(platforms), "polymarket")
         to_chain = PLATFORM_CHAIN.get(primary_platform, 137)
         to_token = PLATFORM_STABLE.get(primary_platform, USDC_POLYGON)
 
-        # Determine bridge recipient
-        if primary_platform == "opinion":
-            to_address = os.getenv("OPINION_WALLET_ADDRESS", "")
+        # Same chain = from_chain equals target platform chain
+        same_chain = from_chain == to_chain
+
+        if same_chain and from_chain == 8453:
+            # Same chain on Base — use Router.transferERC20, no bridge
+            # Check user balance on Base
+            usdc_abi = [{"inputs": [{"name": "account", "type": "address"}], "name": "balanceOf", "outputs": [{"type": "uint256"}], "type": "function"}]
+            usdc_contract = w3.eth.contract(address=Web3.to_checksum_address(from_token), abi=usdc_abi)
+            user_balance = usdc_contract.functions.balanceOf(user_addr).call()
+            if user_balance < amount_raw:
+                order["status"] = "failed"
+                order["error"] = f"Insufficient balance: have {user_balance / (10**from_decimals):.4f}, need {amount_raw / (10**from_decimals):.4f}"
+                orders = _load_orders()
+                orders.append(order)
+                _save_orders(orders)
+                return order
+
+            router = w3.eth.contract(address=router_addr, abi=ROUTER_ABI)
+            pid = PLATFORM_ROUTER_ID.get(primary_platform, 0)
+            metadata = Web3.to_bytes(text=json.dumps({
+                "order_id": order_id, "event_id": body["event_id"],
+                "team": body["team"], "side": body["side"],
+            }))
+            tx = router.functions.transferERC20(
+                Web3.to_checksum_address(from_token), user_addr, pid, amount_raw, metadata,
+            ).build_transaction({
+                "from": OWNER_ACCOUNT.address,
+                "nonce": w3.eth.get_transaction_count(OWNER_ACCOUNT.address, "pending"),
+                "gas": 150000,
+                "maxFeePerGas": w3.eth.gas_price * 2,
+                "maxPriorityFeePerGas": w3.eth.max_priority_fee,
+                "chainId": 8453,
+            })
+            signed = OWNER_ACCOUNT.sign_transaction(tx)
+            tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+            order["tx_hash"] = "0x" + tx_hash.hex()
+            w3.eth.wait_for_transaction_receipt(tx_hash, timeout=30)
+            order["status"] = "bridged"  # skip LiFi, go straight to trades
+            logger.info(f"Order {order_id}: Router.transferERC20 {amount_raw/(10**from_decimals):.2f}, tx={order['tx_hash']}")
+        elif same_chain:
+            # Same chain but NOT Base (e.g. user pays on Polygon for Polymarket) — relayer pulls directly
+            # Relayer needs to transferFrom on that chain; user approved relayer EOA
+            from web3 import Web3 as W3
+            chain_rpcs = {137: POLYGON_RPC, 56: os.getenv("BSC_RPC", "https://bsc-rpc.publicnode.com")}
+            chain_w3 = W3(W3.HTTPProvider(chain_rpcs.get(from_chain, POLYGON_RPC)))
+            relayer_addr = Account.from_key(RELAYER_KEY).address
+
+            erc20_abi = [
+                {"inputs": [{"name": "from", "type": "address"},{"name": "to", "type": "address"},{"name": "amount", "type": "uint256"}], "name": "transferFrom", "outputs": [{"type": "bool"}], "type": "function"},
+                {"inputs": [{"name": "account", "type": "address"}], "name": "balanceOf", "outputs": [{"type": "uint256"}], "type": "function"},
+            ]
+            token_contract = chain_w3.eth.contract(address=W3.to_checksum_address(from_token), abi=erc20_abi)
+            user_balance = token_contract.functions.balanceOf(user_addr).call()
+            if user_balance < amount_raw:
+                order["status"] = "failed"
+                order["error"] = f"Insufficient balance: have {user_balance / (10**from_decimals):.4f}, need {amount_raw / (10**from_decimals):.4f}"
+                orders = _load_orders()
+                orders.append(order)
+                _save_orders(orders)
+                return order
+
+            # Determine destination address on this chain
+            if primary_platform == "opinion":
+                dest = os.getenv("OPINION_WALLET_ADDRESS", relayer_addr)
+            else:
+                dest = relayer_addr
+
+            tx = token_contract.functions.transferFrom(user_addr, W3.to_checksum_address(dest), amount_raw).build_transaction({
+                "from": relayer_addr,
+                "nonce": chain_w3.eth.get_transaction_count(relayer_addr, "pending"),
+                "gas": 100000,
+                "gasPrice": chain_w3.eth.gas_price,
+                "chainId": from_chain,
+            })
+            signed = Account.from_key(RELAYER_KEY).sign_transaction(tx)
+            tx_hash = chain_w3.eth.send_raw_transaction(signed.raw_transaction)
+            order["tx_hash"] = "0x" + tx_hash.hex()
+            chain_w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+            order["status"] = "bridged"  # no bridge needed
+            logger.info(f"Order {order_id}: same-chain transferFrom on chain {from_chain}, tx={order['tx_hash']}")
         else:
-            to_address = Account.from_key(RELAYER_KEY).address if RELAYER_KEY else user_addr
+            # Cross-chain: user's from_chain differs from platform's chain
+            # If from_chain == 8453 (Base), use Router.bridgeViaLiFi; otherwise relayer transferFrom + bridge
+            if primary_platform == "opinion":
+                to_address = os.getenv("OPINION_WALLET_ADDRESS", "")
+            else:
+                to_address = Account.from_key(RELAYER_KEY).address if RELAYER_KEY else user_addr
 
-        lifi_params = {
-            "fromChain": 8453,
-            "toChain": to_chain,
-            "fromToken": USDC_BASE,
-            "toToken": to_token,
-            "fromAmount": str(amount_raw),
-            "fromAddress": router_addr,
-            "toAddress": Web3.to_checksum_address(to_address),
-            "slippage": "0.05",
-            "integrator": "premarket-router",
-        }
-        logger.info(f"LiFi quote params: {lifi_params}")
-        lifi_resp = req_lib.get("https://li.quest/v1/quote", params=lifi_params, timeout=15)
-        lifi_quote = lifi_resp.json()
-        if "transactionRequest" not in lifi_quote:
-            raise Exception(f"LiFi quote error: {json.dumps(lifi_quote)[:500]}")
-        lifi_data = lifi_quote["transactionRequest"]["data"]
+            if from_chain == 8453:
+                # User pays on Base, bridge to target chain via Router
+                lifi_params = {
+                    "fromChain": 8453,
+                    "toChain": to_chain,
+                    "fromToken": USDC_BASE,
+                    "toToken": to_token,
+                    "fromAmount": str(amount_raw),
+                    "fromAddress": router_addr,
+                    "toAddress": Web3.to_checksum_address(to_address),
+                    "slippage": "0.05",
+                    "integrator": "premarket-router",
+                }
+                logger.info(f"LiFi quote params: {lifi_params}")
+                lifi_resp = req_lib.get("https://li.quest/v1/quote", params=lifi_params, timeout=15)
+                lifi_quote = lifi_resp.json()
+                if "transactionRequest" not in lifi_quote:
+                    raise Exception(f"LiFi quote error: {json.dumps(lifi_quote)[:500]}")
+                lifi_data = lifi_quote["transactionRequest"]["data"]
 
-        metadata = Web3.to_bytes(text=json.dumps({
-            "order_id": order_id,
-            "event_id": body["event_id"],
-            "team": body["team"],
-            "side": body["side"],
-        }))
+                metadata = Web3.to_bytes(text=json.dumps({
+                    "order_id": order_id, "event_id": body["event_id"],
+                    "team": body["team"], "side": body["side"],
+                }))
 
-        router = w3.eth.contract(address=router_addr, abi=ROUTER_ABI)
-        tx = router.functions.bridgeViaLiFi(
-            Web3.to_checksum_address(USDC_BASE),
-            user_addr,
-            amount_raw,
-            Web3.to_checksum_address(LIFI_DIAMOND),
-            bytes.fromhex(lifi_data[2:]),  # strip 0x
-            metadata,
-        ).build_transaction({
-            "from": OWNER_ACCOUNT.address,
-            "nonce": w3.eth.get_transaction_count(OWNER_ACCOUNT.address, "pending"),
-            "gas": 500000,
-            "maxFeePerGas": w3.eth.gas_price * 2,
-            "maxPriorityFeePerGas": w3.eth.max_priority_fee,
-            "chainId": 8453,
-        })
+                router = w3.eth.contract(address=router_addr, abi=ROUTER_ABI)
+                tx = router.functions.bridgeViaLiFi(
+                    Web3.to_checksum_address(USDC_BASE), user_addr, amount_raw,
+                    Web3.to_checksum_address(LIFI_DIAMOND),
+                    bytes.fromhex(lifi_data[2:]), metadata,
+                ).build_transaction({
+                    "from": OWNER_ACCOUNT.address,
+                    "nonce": w3.eth.get_transaction_count(OWNER_ACCOUNT.address, "pending"),
+                    "gas": 500000,
+                    "maxFeePerGas": w3.eth.gas_price * 2,
+                    "maxPriorityFeePerGas": w3.eth.max_priority_fee,
+                    "chainId": 8453,
+                })
+                signed = OWNER_ACCOUNT.sign_transaction(tx)
+                tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+                order["tx_hash"] = "0x" + tx_hash.hex()
+                order["status"] = "sent"
+            else:
+                # User pays on non-Base chain, need to pull there then bridge to target
+                from web3 import Web3 as W3
+                chain_rpcs = {137: POLYGON_RPC, 56: os.getenv("BSC_RPC", "https://bsc-rpc.publicnode.com")}
+                chain_w3 = W3(W3.HTTPProvider(chain_rpcs.get(from_chain, POLYGON_RPC)))
+                relayer_addr = Account.from_key(RELAYER_KEY).address
 
-        signed = OWNER_ACCOUNT.sign_transaction(tx)
-        tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
-        order["tx_hash"] = "0x" + tx_hash.hex()
-        order["status"] = "sent"
+                erc20_abi = [
+                    {"inputs": [{"name": "from", "type": "address"},{"name": "to", "type": "address"},{"name": "amount", "type": "uint256"}], "name": "transferFrom", "outputs": [{"type": "bool"}], "type": "function"},
+                ]
+                token_contract = chain_w3.eth.contract(address=W3.to_checksum_address(from_token), abi=erc20_abi)
+                tx = token_contract.functions.transferFrom(user_addr, W3.to_checksum_address(relayer_addr), amount_raw).build_transaction({
+                    "from": relayer_addr,
+                    "nonce": chain_w3.eth.get_transaction_count(relayer_addr, "pending"),
+                    "gas": 100000,
+                    "gasPrice": chain_w3.eth.gas_price,
+                    "chainId": from_chain,
+                })
+                signed = Account.from_key(RELAYER_KEY).sign_transaction(tx)
+                pull_hash = chain_w3.eth.send_raw_transaction(signed.raw_transaction)
+                chain_w3.eth.wait_for_transaction_receipt(pull_hash, timeout=60)
+                order["tx_hash"] = "0x" + pull_hash.hex()
+                logger.info(f"Order {order_id}: pulled from user on chain {from_chain}, tx={order['tx_hash']}")
+
+                # Now bridge from from_chain to to_chain via LiFi
+                lifi_params = {
+                    "fromChain": from_chain,
+                    "toChain": to_chain,
+                    "fromToken": from_token,
+                    "toToken": to_token,
+                    "fromAmount": str(amount_raw),
+                    "fromAddress": relayer_addr,
+                    "toAddress": Web3.to_checksum_address(to_address),
+                    "slippage": "0.05",
+                    "integrator": "premarket-router",
+                }
+                logger.info(f"LiFi quote params (cross): {lifi_params}")
+                lifi_resp = req_lib.get("https://li.quest/v1/quote", params=lifi_params, timeout=15)
+                lifi_quote = lifi_resp.json()
+                if "transactionRequest" not in lifi_quote:
+                    raise Exception(f"LiFi quote error: {json.dumps(lifi_quote)[:500]}")
+                lifi_tx_req = lifi_quote["transactionRequest"]
+
+                # Send bridge tx from relayer on from_chain
+                bridge_tx = {
+                    "from": relayer_addr,
+                    "to": W3.to_checksum_address(lifi_tx_req["to"]),
+                    "data": lifi_tx_req["data"],
+                    "value": int(lifi_tx_req.get("value", "0"), 16) if isinstance(lifi_tx_req.get("value"), str) else int(lifi_tx_req.get("value", 0)),
+                    "nonce": chain_w3.eth.get_transaction_count(relayer_addr, "pending"),
+                    "gas": int(lifi_tx_req.get("gasLimit", "500000"), 16) if isinstance(lifi_tx_req.get("gasLimit"), str) else int(lifi_tx_req.get("gasLimit", 500000)),
+                    "gasPrice": chain_w3.eth.gas_price,
+                    "chainId": from_chain,
+                }
+                signed = Account.from_key(RELAYER_KEY).sign_transaction(bridge_tx)
+                bridge_hash = chain_w3.eth.send_raw_transaction(signed.raw_transaction)
+                order["bridge_tx"] = "0x" + bridge_hash.hex()
+                order["status"] = "sent"
+                logger.info(f"Order {order_id}: LiFi bridge from {from_chain} to {to_chain}, tx={order['bridge_tx']}")
     except Exception as e:
         order["status"] = "failed"
         order["error"] = str(e)
@@ -452,7 +628,11 @@ async def get_positions(wallet: str = Query(...), event_id: str = Query(None), t
             adapter = _get_adapter(platform)
             if not adapter:
                 continue
-            bal = adapter.get_user_shares_balance(token_id, wallet)
+            # Opinion keeps shares on smart wallet, not user wallet
+            if platform == "opinion":
+                bal = adapter.get_shares_balance(token_id)
+            else:
+                bal = adapter.get_user_shares_balance(token_id, wallet)
             decimals = PLATFORM_DECIMALS.get(platform, 6)
             if bal / (10 ** decimals) < 1:
                 continue
@@ -508,46 +688,86 @@ async def create_sell(body: dict = Body(...)):
     if not adapter:
         return {"error": f"{platform} adapter not configured"}
 
-    # Check user has shares
-    user_shares = adapter.get_user_shares_balance(token_id, user_wallet)
-    if user_shares <= 0:
-        return {"error": f"user has no shares for token {token_id}"}
-
-    decimals = PLATFORM_DECIMALS.get(platform, 6)
-    if sell_amount:
-        shares_to_sell = int(float(sell_amount) * (10 ** decimals))
-        shares_to_sell = min(shares_to_sell, user_shares)
-    else:
-        shares_to_sell = user_shares
-
-    # Check relayer approved by user on CTF
     chain_id = PLATFORM_CHAIN.get(platform, 137)
-    if platform == "opinion":
-        operator = adapter._main_relayer_address
-    else:
-        operator = Account.from_key(RELAYER_KEY).address
-    approved = adapter.check_erc1155_approval(user_wallet, operator)
-    if not approved:
-        return {
-            "error": "relayer not approved",
-            "action": "setApprovalForAll",
-            "ctf_address": adapter.CONDITIONAL_TOKENS if hasattr(adapter, 'CONDITIONAL_TOKENS') else adapter.CTF_ADDRESS,
-            "operator": operator,
-            "chain_id": chain_id,
-        }
-
-    # Pull shares from user to relayer/smart wallet
+    ctf_address = adapter.CONDITIONAL_TOKENS if hasattr(adapter, 'CONDITIONAL_TOKENS') else adapter.CTF_ADDRESS
+    decimals = PLATFORM_DECIMALS.get(platform, 6)
     sell_id = str(uuid.uuid4())[:8]
-    try:
-        pull_tx = adapter.transfer_erc1155_from_user(user_wallet, token_id, shares_to_sell)
-        logger.info(f"Sell {sell_id}: pulled {shares_to_sell} shares on {platform}, tx={pull_tx}")
-        # Wait for confirmation
-        chain_rpc = {137: POLYGON_RPC, 56: "https://bsc-dataseed.binance.org"}.get(chain_id, POLYGON_RPC)
-        _w3 = Web3(Web3.HTTPProvider(chain_rpc))
-        _w3.eth.wait_for_transaction_receipt(pull_tx, timeout=30)
-        logger.info(f"Sell {sell_id}: pull tx confirmed")
-    except Exception as e:
-        return {"error": f"failed to pull shares: {e}"}
+
+    # Opinion: shares stay on smart wallet (API tracks internally), no pull needed
+    if platform == "opinion":
+        sw_shares = adapter.get_shares_balance(token_id)
+        if sw_shares <= 0:
+            return {"error": f"no shares on smart wallet for token {token_id}"}
+        if sell_amount:
+            shares_to_sell = int(float(sell_amount) * (10 ** decimals))
+        else:
+            shares_to_sell = sw_shares
+        shares_to_sell = min(shares_to_sell, sw_shares)
+        pull_tx = "skipped_opinion"
+        logger.info(f"Sell {sell_id}: Opinion shares already on smart_wallet, balance={sw_shares}, to_sell={shares_to_sell}")
+    else:
+        # Check user has shares
+        user_shares = adapter.get_user_shares_balance(token_id, user_wallet)
+        if user_shares <= 0:
+            return {"error": f"user has no shares for token {token_id}"}
+
+        if sell_amount:
+            shares_to_sell = int(float(sell_amount) * (10 ** decimals))
+        else:
+            shares_to_sell = user_shares
+        shares_to_sell = min(shares_to_sell, user_shares)
+        logger.info(f"Sell: user_shares={user_shares}, requested={sell_amount}, to_sell={shares_to_sell}")
+
+        # Check operator approved by user on CTF
+        if chain_id == 8453:
+            operator = Web3.to_checksum_address(ROUTER_ADDRESS)
+        else:
+            operator = Account.from_key(RELAYER_KEY).address
+
+        approved = adapter.check_erc1155_approval(user_wallet, operator)
+        if not approved:
+            return {
+                "error": "operator not approved",
+                "action": "setApprovalForAll",
+                "ctf_address": ctf_address,
+                "operator": operator,
+                "chain_id": chain_id,
+            }
+
+        # Pull shares from user
+        try:
+            if chain_id == 8453:
+                router_addr = Web3.to_checksum_address(ROUTER_ADDRESS)
+                pid = PLATFORM_ROUTER_ID.get(platform, 0)
+                router = w3.eth.contract(address=router_addr, abi=ROUTER_ABI)
+                user_addr = Web3.to_checksum_address(user_wallet)
+                metadata = Web3.to_bytes(text=json.dumps({"sell_id": sell_id, "platform": platform}))
+                tx = router.functions.transferERC1155(
+                    Web3.to_checksum_address(ctf_address), user_addr, pid,
+                    int(token_id), shares_to_sell, metadata,
+                ).build_transaction({
+                    "from": OWNER_ACCOUNT.address,
+                    "nonce": w3.eth.get_transaction_count(OWNER_ACCOUNT.address, "pending"),
+                    "gas": 200000,
+                    "maxFeePerGas": w3.eth.gas_price * 2,
+                    "maxPriorityFeePerGas": w3.eth.max_priority_fee,
+                    "chainId": 8453,
+                })
+                signed = OWNER_ACCOUNT.sign_transaction(tx)
+                tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+                pull_tx = "0x" + tx_hash.hex()
+                w3.eth.wait_for_transaction_receipt(tx_hash, timeout=30)
+                logger.info(f"Sell {sell_id}: Router.transferERC1155 pulled {shares_to_sell} shares, tx={pull_tx}")
+            else:
+                pull_tx = adapter.transfer_erc1155_from_user(user_wallet, token_id, shares_to_sell)
+                chain_rpc = {137: POLYGON_RPC, 56: "https://bsc-dataseed.binance.org"}.get(chain_id, POLYGON_RPC)
+                _w3 = Web3(Web3.HTTPProvider(chain_rpc))
+                receipt = _w3.eth.wait_for_transaction_receipt(pull_tx, timeout=30)
+                if receipt["status"] != 1:
+                    raise Exception(f"pull tx reverted: {pull_tx}")
+                logger.info(f"Sell {sell_id}: adapter pulled {shares_to_sell} shares on chain {chain_id}, tx={pull_tx}")
+        except Exception as e:
+            return {"error": f"failed to pull shares: {e}"}
 
     sell_order = {
         "id": sell_id,
@@ -560,6 +780,7 @@ async def create_sell(body: dict = Body(...)):
         "platforms": {platform: {"token_id": token_id, "market_id": market_id}},
         "shares_amount": shares_to_sell,
         "pull_tx": pull_tx,
+        "to_chain": body.get("to_chain", 8453),
         "status": "shares_pulled",
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
@@ -661,6 +882,40 @@ def _execute_trades(order: dict) -> dict:
             except Exception as e:
                 logger.error(f"Order {order['id']}: {pname} trade failed: {e}")
                 results[pname] = {"error": str(e)}
+        elif pname == "limitless":
+            adapter = _get_limitless_adapter()
+            if not adapter:
+                results[pname] = {"error": "adapter not configured"}
+                continue
+            try:
+                # Limitless is on Base, USDC already on relayer (transferred in create_order)
+                actual_balance = adapter.get_usdc_balance() / 1e6
+                actual_spent = math.floor(min(spent, actual_balance) * 100) / 100
+                if actual_spent < 1.0:
+                    results[pname] = {"error": f"insufficient USDC: {actual_balance:.4f}, min $1"}
+                    continue
+                logger.info(f"Order {order['id']}: budget={spent}, actual USDC={actual_balance:.4f}, using={actual_spent:.2f}")
+                best = adapter.get_best_offer(market_id, "BUY")  # slug as token_id for orderbook
+                price = best["price"]
+                if price <= 0:
+                    results[pname] = {"error": "no asks available"}
+                    continue
+                # BUY: amount = USDC to spend
+                resp = adapter.place_order(
+                    token_id=token_id,
+                    market_id=market_id,  # slug
+                    amount=actual_spent, price=price, side="BUY",
+                )
+                results[pname] = {
+                    "order_id": resp.get("orderId"),
+                    "status": resp.get("status"),
+                    "price": price,
+                    "amount": actual_spent,
+                }
+                logger.info(f"Order {order['id']}: {pname} placed, status={resp.get('status')}")
+            except Exception as e:
+                logger.error(f"Order {order['id']}: {pname} trade failed: {e}")
+                results[pname] = {"error": str(e)}
         else:
             results[pname] = {"error": "adapter not implemented"}
 
@@ -711,18 +966,37 @@ def _settle_and_transfer(order: dict) -> dict:
             adapter = _get_opinion_adapter()
             if not adapter:
                 continue
+            # Opinion API tracks balances internally — keep shares on smart wallet
+            # so sell flow can use them without re-indexing issues
             for attempt in range(5):
                 balance = adapter.get_shares_balance(token_id)
                 if balance > 0:
-                    tx_hash = adapter.transfer_erc1155_to_user(user_wallet, token_id, balance)
-                    transfers[pname] = {"tx_hash": tx_hash, "success": True, "amount": balance}
-                    logger.info(f"Order {order['id']}: opinion transferred {balance} shares, attempt {attempt+1}")
+                    # Don't transfer to user — record as "settled on smart wallet"
+                    transfers[pname] = {"tx_hash": "kept_on_smart_wallet", "success": True, "amount": balance}
+                    logger.info(f"Order {order['id']}: opinion shares kept on smart_wallet, balance={balance}")
                     break
                 logger.info(f"Order {order['id']}: opinion settlement pending, attempt {attempt+1}/5")
                 if attempt < 4:
                     time.sleep(5)
             else:
                 logger.warning(f"Order {order['id']}: opinion settlement not received after 5 retries")
+
+        elif pname == "limitless":
+            adapter = _get_limitless_adapter()
+            if not adapter:
+                continue
+            for attempt in range(5):
+                balance = adapter.get_shares_balance(token_id)
+                if balance > 0:
+                    result = adapter.transfer_shares(token_id, user_wallet, balance)
+                    transfers[pname] = {"tx_hash": result["tx_hash"], "success": result["success"], "amount": balance}
+                    logger.info(f"Order {order['id']}: limitless transferred {balance} shares, attempt {attempt+1}")
+                    break
+                logger.info(f"Order {order['id']}: limitless settlement pending, attempt {attempt+1}/5")
+                if attempt < 4:
+                    time.sleep(5)
+            else:
+                logger.warning(f"Order {order['id']}: limitless settlement not received after 5 retries")
 
     all_ok = all(t.get("success") for t in transfers.values()) and len(transfers) > 0
     return {"done": all_ok, "transfers": transfers}
@@ -745,23 +1019,42 @@ def _execute_sell(order: dict) -> dict:
         return {"error": f"{platform} adapter not configured"}
 
     try:
-        best = adapter.get_best_offer(token_id, "SELL")
+        # For limitless, orderbook uses slug (market_id) not token_id
+        ob_key = market_id if platform == "limitless" else token_id
+        best = adapter.get_best_offer(ob_key, "SELL")
         price = best["price"]
         if price <= 0:
             return {"error": "no bids available"}
 
         # Convert raw shares to human-readable
         amount = math.floor((shares / (10 ** decimals)) * 100) / 100
-        if amount < 1.0:
-            return {"error": f"shares too small to sell: {amount}"}
+        # Check platform minimums (order value = amount * price)
+        order_value = amount * price
+        min_value = {"opinion": 1.30}.get(platform, 1.0)
+        if order_value < min_value:
+            return {"error": f"order value ${order_value:.2f} below {platform} minimum ${min_value:.2f}"}
+
+        # Debug: check on-chain balance of trading wallet before sell
+        if platform == "opinion":
+            # Wait for BSC indexing
+            time.sleep(5)
+            sw_bal = adapter.get_shares_balance(token_id)
+            logger.info(f"Sell {order['id']}: Opinion smart_wallet={adapter.smart_wallet} shares={sw_bal}, need={shares} ({amount})")
+            if sw_bal <= 0:
+                eoa_bal = adapter.get_token_balance(adapter._main_relayer_address, token_id)
+                user_bal = adapter.get_user_shares_balance(token_id, order["wallet"])
+                logger.info(f"Sell {order['id']}: main_relayer={adapter._main_relayer_address} eoa_bal={eoa_bal}, user_bal={user_bal}")
+                return {"error": f"Smart wallet has 0 shares (sw={adapter.smart_wallet}, eoa={eoa_bal}, user={user_bal}). Pull tx: {order.get('pull_tx')}"}
 
         # Snapshot balance BEFORE placing order
         get_bal = adapter.get_usdt_balance if platform == "opinion" else adapter.get_usdc_balance
         balance_before = get_bal()
 
+        # Limitless uses slug as market_id, others use int
+        mid = market_id if platform == "limitless" else (int(market_id) if market_id else 0)
         resp = adapter.place_order(
             token_id=token_id,
-            market_id=int(market_id) if market_id else 0,
+            market_id=mid,
             amount=amount, price=price, side="SELL",
         )
         logger.info(f"Sell {order['id']}: placed SELL on {platform}, status={resp.get('status')}, balance_before={balance_before}")
@@ -808,7 +1101,7 @@ def _settle_sell(order: dict) -> dict:
 
 
 def _bridge_back(order: dict) -> dict:
-    """Bridge stablecoin back to Base via LiFi. Relayer sends tx on source chain."""
+    """Bridge stablecoin to user's chosen chain (or direct transfer if same chain)."""
     platform = next(iter(order.get("platforms", {})), "polymarket")
     adapter = _get_adapter(platform)
     if not adapter:
@@ -820,11 +1113,29 @@ def _bridge_back(order: dict) -> dict:
     from_chain = PLATFORM_CHAIN.get(platform, 137)
     from_token = PLATFORM_STABLE.get(platform, USDC_POLYGON)
 
-    # Use only sell proceeds, not full wallet balance
+    # User's chosen destination chain (default = Base for backward compat)
+    to_chain = order.get("to_chain", 8453)
+    to_token = CHAIN_STABLE.get(to_chain, USDC_BASE)
+
     settle = order.get("settle_results", {})
     proceeds = settle.get("proceeds", 0)
     if proceeds <= 0:
         return {"error": "no sell proceeds to bridge"}
+
+    # Same chain — direct stablecoin transfer, no bridge
+    if from_chain == to_chain:
+        try:
+            tx_hash = adapter.transfer_usdt_to_user(user_addr, proceeds)
+            if from_chain == 8453:
+                w3.eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+            else:
+                from web3 import Web3 as W3
+                rpc_map = {137: POLYGON_RPC, 56: "https://bsc-dataseed.binance.org"}
+                W3(W3.HTTPProvider(rpc_map.get(from_chain, POLYGON_RPC))).eth.wait_for_transaction_receipt(tx_hash, timeout=60)
+            logger.info(f"Sell {order['id']}: same-chain transfer {proceeds/(10**decimals):.4f} to user on chain {from_chain}, tx={tx_hash}")
+            return {"bridge_tx": tx_hash, "amount": proceeds}
+        except Exception as e:
+            return {"error": str(e)}
 
     # For Opinion: transfer only proceeds from smart wallet to main relayer
     if platform == "opinion":
@@ -848,9 +1159,9 @@ def _bridge_back(order: dict) -> dict:
     try:
         lifi_resp = req_lib.get("https://li.quest/v1/quote", params={
             "fromChain": from_chain,
-            "toChain": 8453,
+            "toChain": to_chain,
             "fromToken": from_token,
-            "toToken": USDC_BASE,
+            "toToken": to_token,
             "fromAmount": str(amount_raw),
             "fromAddress": from_address,
             "toAddress": user_addr,
@@ -905,7 +1216,7 @@ def _bridge_back(order: dict) -> dict:
         if receipt["status"] != 1:
             return {"error": f"bridge tx reverted: {h}"}
 
-        logger.info(f"Sell {order['id']}: bridge tx sent on chain {from_chain}, hash={h}")
+        logger.info(f"Sell {order['id']}: bridge tx from {from_chain} to {to_chain}, hash={h}")
         return {"bridge_tx": h, "amount": amount_raw}
 
     except Exception as e:
@@ -915,6 +1226,7 @@ def _bridge_back(order: dict) -> dict:
 
 async def poll_orders():
     """Background task: poll LiFi status for sent orders, execute trades for bridged."""
+    MAX_RETRIES = 5
     while True:
         await asyncio.sleep(10)
         orders = _load_orders()
@@ -946,23 +1258,36 @@ async def poll_orders():
                 except Exception:
                     pass
 
-            # Step 2: Execute trades for bridged orders
-            elif o["status"] == "bridged" and o.get("direction") != "sell":
+            # Step 2: Execute trades for bridged orders (with retries)
+            elif o["status"] in ("bridged", "trade_failed") and o.get("direction") != "sell":
+                retries = o.get("trade_retries", 0)
+                if o["status"] == "trade_failed" and retries >= MAX_RETRIES:
+                    continue
                 try:
                     results = await asyncio.to_thread(_execute_trades, o)
                     o["trade_results"] = results
                     all_ok = all("error" not in v for v in results.values()) and len(results) > 0
-                    o["status"] = "matched" if all_ok else "trade_failed"
+                    if all_ok:
+                        o["status"] = "matched"
+                        logger.info(f"Order {o['id']}: trades matched on attempt {retries+1}")
+                    else:
+                        o["trade_retries"] = retries + 1
+                        o["trade_error"] = str({k: v.get("error") for k, v in results.items() if "error" in v})
+                        if retries + 1 >= MAX_RETRIES:
+                            o["status"] = "trade_failed"
+                        logger.warning(f"Order {o['id']}: trade attempt {retries+1}/{MAX_RETRIES} failed")
                     changed = True
-                    logger.info(f"Order {o['id']}: trades {'matched' if all_ok else 'failed'}")
                 except Exception as e:
-                    logger.error(f"Order {o['id']}: trade execution error: {e}")
-                    o["status"] = "trade_failed"
+                    o["trade_retries"] = retries + 1
                     o["trade_error"] = str(e)
+                    if retries + 1 >= MAX_RETRIES:
+                        o["status"] = "trade_failed"
                     changed = True
+                    logger.error(f"Order {o['id']}: trade attempt {retries+1}/{MAX_RETRIES} error: {e}")
 
-            # Step 3: Poll settlement + transfer shares to user
+            # Step 3: Poll settlement + transfer shares to user (with retries)
             elif o["status"] == "matched" and o.get("direction") != "sell":
+                retries = o.get("settle_retries", 0)
                 try:
                     result = await asyncio.to_thread(_settle_and_transfer, o)
                     if result.get("done"):
@@ -970,59 +1295,100 @@ async def poll_orders():
                         o["status"] = "filled"
                         changed = True
                         logger.info(f"Order {o['id']}: shares transferred to user")
+                    else:
+                        o["settle_retries"] = retries + 1
+                        if retries + 1 >= MAX_RETRIES * 2:
+                            o["status"] = "trade_failed"
+                            o["trade_error"] = "settlement timeout"
+                            changed = True
+                        logger.info(f"Order {o['id']}: settle attempt {retries+1}, waiting…")
                 except Exception as e:
+                    o["settle_retries"] = retries + 1
                     logger.error(f"Order {o['id']}: settlement check error: {e}")
 
             # === SELL FLOW ===
-            # Sell step 1: shares_pulled -> sell on platform
-            elif o["status"] == "shares_pulled" and o.get("direction") == "sell":
+
+            # Sell step 1: shares_pulled -> sell on platform (with retries)
+            elif o["status"] in ("shares_pulled", "trade_failed") and o.get("direction") == "sell":
+                retries = o.get("trade_retries", 0)
+                if retries >= MAX_RETRIES:
+                    continue
                 try:
                     sell_platform = next(iter(o.get("platforms", {})), "polymarket")
                     result = await asyncio.to_thread(_execute_sell, o)
                     o["trade_results"] = {sell_platform: result}
                     if "error" in result:
-                        o["status"] = "trade_failed"
+                        o["trade_retries"] = retries + 1
                         o["trade_error"] = result["error"]
+                        if retries + 1 >= MAX_RETRIES:
+                            o["status"] = "trade_failed"
+                        # else stay in same status for retry
+                        logger.warning(f"Sell {o['id']}: trade attempt {retries+1}/{MAX_RETRIES} failed: {result['error']}")
                     else:
                         o["status"] = "sell_matched"
+                        logger.info(f"Sell {o['id']}: matched on attempt {retries+1}")
                     changed = True
-                    logger.info(f"Sell {o['id']}: {'matched' if 'error' not in result else 'failed'}")
                 except Exception as e:
-                    logger.error(f"Sell {o['id']}: sell execution error: {e}")
-                    o["status"] = "trade_failed"
+                    o["trade_retries"] = retries + 1
                     o["trade_error"] = str(e)
+                    if retries + 1 >= MAX_RETRIES:
+                        o["status"] = "trade_failed"
                     changed = True
+                    logger.error(f"Sell {o['id']}: trade attempt {retries+1}/{MAX_RETRIES} error: {e}")
 
-            # Sell step 2: sell_matched -> wait for USDC.e settlement
+            # Sell step 2: sell_matched -> wait for USDC settlement (with retries)
             elif o["status"] == "sell_matched" and o.get("direction") == "sell":
+                retries = o.get("settle_retries", 0)
                 try:
                     result = await asyncio.to_thread(_settle_sell, o)
                     if result.get("done"):
                         o["settle_results"] = result
                         o["status"] = "sell_settled"
                         changed = True
-                        logger.info(f"Sell {o['id']}: USDC.e settled")
+                        logger.info(f"Sell {o['id']}: settled")
+                    else:
+                        o["settle_retries"] = retries + 1
+                        if retries + 1 >= MAX_RETRIES * 2:
+                            o["status"] = "trade_failed"
+                            o["trade_error"] = "settlement timeout"
+                            changed = True
+                        logger.info(f"Sell {o['id']}: settle attempt {retries+1}, waiting…")
                 except Exception as e:
-                    logger.error(f"Sell {o['id']}: settle check error: {e}")
+                    o["settle_retries"] = retries + 1
+                    logger.error(f"Sell {o['id']}: settle error: {e}")
 
-            # Sell step 3: sell_settled -> bridge USDC.e back to Base
-            elif o["status"] == "sell_settled" and o.get("direction") == "sell":
+            # Sell step 3: sell_settled -> bridge back (with retries)
+            elif o["status"] in ("sell_settled", "bridge_failed") and o.get("direction") == "sell":
+                retries = o.get("bridge_retries", 0)
+                if retries >= MAX_RETRIES:
+                    continue
                 try:
+                    sell_platform = next(iter(o.get("platforms", {})), "polymarket")
                     result = await asyncio.to_thread(_bridge_back, o)
                     if "error" in result:
-                        o["status"] = "bridge_failed"
+                        o["bridge_retries"] = retries + 1
                         o["bridge_error"] = result["error"]
+                        if retries + 1 >= MAX_RETRIES:
+                            o["status"] = "bridge_failed"
+                        logger.warning(f"Sell {o['id']}: bridge attempt {retries+1}/{MAX_RETRIES} failed: {result['error']}")
                     else:
                         o["bridge_back_tx"] = result["bridge_tx"]
                         o["bridge_back_amount"] = result["amount"]
-                        o["status"] = "bridging_back"
+                        sell_from_chain = PLATFORM_CHAIN.get(sell_platform, 137)
+                        sell_to_chain = o.get("to_chain", 8453)
+                        if sell_from_chain == sell_to_chain:
+                            o["status"] = "completed"
+                        else:
+                            o["status"] = "bridging_back"
+                        logger.info(f"Sell {o['id']}: bridge sent on attempt {retries+1}")
                     changed = True
-                    logger.info(f"Sell {o['id']}: bridge back {'sent' if 'error' not in result else 'failed'}")
                 except Exception as e:
-                    logger.error(f"Sell {o['id']}: bridge back error: {e}")
-                    o["status"] = "bridge_failed"
+                    o["bridge_retries"] = retries + 1
                     o["bridge_error"] = str(e)
+                    if retries + 1 >= MAX_RETRIES:
+                        o["status"] = "bridge_failed"
                     changed = True
+                    logger.error(f"Sell {o['id']}: bridge attempt {retries+1}/{MAX_RETRIES} error: {e}")
 
             # Sell step 4: bridging_back -> poll LiFi status
             elif o["status"] == "bridging_back" and o.get("direction") == "sell":
@@ -1046,6 +1412,7 @@ async def poll_orders():
                                 logger.info(f"Sell {o['id']}: bridge back done, completed")
                             elif lifi_status == "FAILED":
                                 o["status"] = "bridge_failed"
+                                o["bridge_retries"] = 0  # allow retry of bridge
                                 changed = True
                 except Exception:
                     pass

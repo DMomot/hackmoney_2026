@@ -1347,5 +1347,970 @@
         "amount": 15960871794871794872
       }
     }
+  },
+  {
+    "id": "e7071b7b",
+    "direction": "sell",
+    "buy_order_id": "68a02541",
+    "wallet": "0x1ED167f87F77Ee1059A7bF2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "platforms": {
+      "opinion": {
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "market_id": "1354"
+      }
+    },
+    "shares_amount": 15970000000000000000,
+    "pull_tx": "0x8efc6d12d596b461dd6b0eb27072b25bbed348ee668fe2e1bf492b90b7de5b0c",
+    "status": "completed",
+    "created_at": "2026-02-07T23:15:04.079435+00:00",
+    "trade_results": {
+      "opinion": {
+        "order_id": "d8d217f7-047a-11f1-ac45-0a58a9feac02",
+        "status": "NEW",
+        "price": 0.155,
+        "amount": 15.97,
+        "balance_before": 700995766983139,
+        "order_params": {}
+      }
+    },
+    "settle_results": {
+      "done": true,
+      "balance_before": 700995766983139,
+      "balance_after": 1976050995766983139,
+      "proceeds": 1975350000000000000
+    },
+    "bridge_back_tx": "0x456adbcd3fcc907b031b38eca521ea5cd1fd1d4cbc87e245a5035cc867318615",
+    "bridge_back_amount": 1970000000000000000,
+    "receiving_tx_hash": "0x413bfd2c78221f548e889516f7de86a33f712608441e2ae04b274254437868dd",
+    "receiving_chain_id": 8453
+  },
+  {
+    "id": "c5d0c24b",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Ecuador",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 250,
+      "avg_price": 0.008,
+      "avg_price_cents": 0.8,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "limitless": {
+          "spent": 2,
+          "qty": 250,
+          "avg_price": 0.008,
+          "avg_price_cents": 0.8,
+          "market_id": "ecuador-1765296582376",
+          "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079"
+        }
+      },
+      "fills": [
+        {
+          "platform": "limitless",
+          "price": 0.008,
+          "price_cents": 0.8,
+          "size": 250,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Team Ecuador not found in fifa-world-cup-2026"
+      }
+    },
+    "platforms": {
+      "limitless": {
+        "market_id": "ecuador-1765296582376",
+        "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079",
+        "spent": 2,
+        "qty": 250
+      }
+    },
+    "status": "trade_failed",
+    "approve_tx_hash": null,
+    "tx_hash": "0x9560b2d30b6e69c90e4b802cf2fed5a319bf35c1b6cb19f57890aca20610a136",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-07T23:50:19.031304+00:00",
+    "trade_results": {
+      "limitless": {
+        "error": "Event loop is closed"
+      }
+    }
+  },
+  {
+    "id": "0bb47799",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Ecuador",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 250,
+      "avg_price": 0.008,
+      "avg_price_cents": 0.8,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "limitless": {
+          "spent": 2,
+          "qty": 250,
+          "avg_price": 0.008,
+          "avg_price_cents": 0.8,
+          "market_id": "ecuador-1765296582376",
+          "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079"
+        }
+      },
+      "fills": [
+        {
+          "platform": "limitless",
+          "price": 0.008,
+          "price_cents": 0.8,
+          "size": 250,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Team Ecuador not found in fifa-world-cup-2026"
+      }
+    },
+    "platforms": {
+      "limitless": {
+        "market_id": "ecuador-1765296582376",
+        "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079",
+        "spent": 2,
+        "qty": 250
+      }
+    },
+    "status": "trade_failed",
+    "approve_tx_hash": "0xfbd8614233c521e87a31e3acae8199a3ef9d2e2e339e152da2bb468fa51e97f8",
+    "tx_hash": "0x5f024328165594ab4227e6f369efaf390662e686cfb3fcec9127eea3accb9488",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-07T23:55:47.910885+00:00",
+    "trade_results": {
+      "limitless": {
+        "error": "Event loop is closed"
+      }
+    }
+  },
+  {
+    "id": "494a407e",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Ecuador",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 250,
+      "avg_price": 0.008,
+      "avg_price_cents": 0.8,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "limitless": {
+          "spent": 2,
+          "qty": 250,
+          "avg_price": 0.008,
+          "avg_price_cents": 0.8,
+          "market_id": "ecuador-1765296582376",
+          "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079"
+        }
+      },
+      "fills": [
+        {
+          "platform": "limitless",
+          "price": 0.008,
+          "price_cents": 0.8,
+          "size": 250,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Team Ecuador not found in fifa-world-cup-2026"
+      }
+    },
+    "platforms": {
+      "limitless": {
+        "market_id": "ecuador-1765296582376",
+        "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079",
+        "spent": 2,
+        "qty": 250
+      }
+    },
+    "status": "trade_failed",
+    "approve_tx_hash": null,
+    "tx_hash": "0x1b9ab488cb02ec1d1d7bce998f2746155222d8ccce800a5e456fceaa86234072",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T00:01:36.982565+00:00",
+    "trade_results": {
+      "limitless": {
+        "error": "Event loop is closed"
+      }
+    }
+  },
+  {
+    "id": "31d52da7",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Ecuador",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 250,
+      "avg_price": 0.008,
+      "avg_price_cents": 0.8,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "limitless": {
+          "spent": 2,
+          "qty": 250,
+          "avg_price": 0.008,
+          "avg_price_cents": 0.8,
+          "market_id": "ecuador-1765296582376",
+          "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079"
+        }
+      },
+      "fills": [
+        {
+          "platform": "limitless",
+          "price": 0.008,
+          "price_cents": 0.8,
+          "size": 250,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Team Ecuador not found in fifa-world-cup-2026"
+      }
+    },
+    "platforms": {
+      "limitless": {
+        "market_id": "ecuador-1765296582376",
+        "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079",
+        "spent": 2,
+        "qty": 250
+      }
+    },
+    "status": "trade_failed",
+    "approve_tx_hash": null,
+    "tx_hash": "0x71c570f3ab6532ef1356f487d1d5fb20d52207108b6390401712898403097417",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T00:03:08.513568+00:00",
+    "trade_results": {
+      "limitless": {
+        "error": "Event loop is closed"
+      }
+    }
+  },
+  {
+    "id": "217b156c",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Ecuador",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 250,
+      "avg_price": 0.008,
+      "avg_price_cents": 0.8,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "limitless": {
+          "spent": 2,
+          "qty": 250,
+          "avg_price": 0.008,
+          "avg_price_cents": 0.8,
+          "market_id": "ecuador-1765296582376",
+          "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079"
+        }
+      },
+      "fills": [
+        {
+          "platform": "limitless",
+          "price": 0.008,
+          "price_cents": 0.8,
+          "size": 250,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Team Ecuador not found in fifa-world-cup-2026"
+      }
+    },
+    "platforms": {
+      "limitless": {
+        "market_id": "ecuador-1765296582376",
+        "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079",
+        "spent": 2,
+        "qty": 250
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": null,
+    "tx_hash": "0x82456e14091c025c018aff95d5c0dbbbc68ebf2b92dbe1a3facab4e8af439a06",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T00:05:27.141418+00:00",
+    "trade_results": {
+      "limitless": {
+        "order_id": "3bf3505e-1143-4e1c-88cc-a9ae537161fc",
+        "status": "MATCHED",
+        "price": 0.008,
+        "amount": 2.0
+      }
+    },
+    "transfer_results": {
+      "limitless": {
+        "tx_hash": "0xd56f46cef09b32a903b1570ef7ee072d3e68693a4ac1141834411cb708119ba5",
+        "success": true,
+        "amount": 242500000
+      }
+    }
+  },
+  {
+    "id": "6f1b3f8d",
+    "direction": "sell",
+    "buy_order_id": "217b156c",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Ecuador",
+    "side": "yes",
+    "platforms": {
+      "limitless": {
+        "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079",
+        "market_id": "ecuador-1765296582376"
+      }
+    },
+    "shares_amount": 242500000,
+    "pull_tx": "0xec5db0176a93fa4b70e4cc039b18d17c8148411fa0051e9624a8e54a74a69300",
+    "status": "trade_failed",
+    "created_at": "2026-02-08T00:08:34.500536+00:00",
+    "trade_results": {
+      "limitless": {
+        "error": "Limitless order failed: 400 {\"message\":\"Insufficient conditional token balance for this order.\"}"
+      }
+    },
+    "trade_error": "Limitless order failed: 400 {\"message\":\"Insufficient conditional token balance for this order.\"}"
+  },
+  {
+    "id": "ba6bfc1b",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Ecuador",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 250,
+      "avg_price": 0.008,
+      "avg_price_cents": 0.8,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "limitless": {
+          "spent": 2,
+          "qty": 250,
+          "avg_price": 0.008,
+          "avg_price_cents": 0.8,
+          "market_id": "ecuador-1765296582376",
+          "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079"
+        }
+      },
+      "fills": [
+        {
+          "platform": "limitless",
+          "price": 0.008,
+          "price_cents": 0.8,
+          "size": 250,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Team Ecuador not found in fifa-world-cup-2026"
+      }
+    },
+    "platforms": {
+      "limitless": {
+        "market_id": "ecuador-1765296582376",
+        "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079",
+        "spent": 2,
+        "qty": 250
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": null,
+    "tx_hash": "0xbc6a30c5452dd913c36096b13c1b267cef62248d0a43f606f74a62888fa29848",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T00:11:06.507712+00:00",
+    "trade_results": {
+      "limitless": {
+        "order_id": "f01910cf-c560-4bb4-bcd1-07b9ecf3d368",
+        "status": "MATCHED",
+        "price": 0.008,
+        "amount": 2.0
+      }
+    },
+    "transfer_results": {
+      "limitless": {
+        "tx_hash": "0x4e95146fb5978ada585381f53076d151a165eacbe58b06505b7cdc38feb41e30",
+        "success": true,
+        "amount": 242500000
+      }
+    }
+  },
+  {
+    "id": "c9772346",
+    "direction": "sell",
+    "buy_order_id": "217b156c",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Ecuador",
+    "side": "yes",
+    "platforms": {
+      "limitless": {
+        "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079",
+        "market_id": "ecuador-1765296582376"
+      }
+    },
+    "shares_amount": 242500000,
+    "pull_tx": "0x456d9c34be34da8c26092fe7a4eafa0406dfe4e59b92c397eb4f623a8aaa6d6a",
+    "status": "completed",
+    "created_at": "2026-02-08T00:11:43.445394+00:00",
+    "trade_results": {
+      "limitless": {
+        "order_id": "e1452848-b1f4-4e2c-a0f0-766d53a95389",
+        "status": "MATCHED",
+        "price": 0.002,
+        "amount": 242.5,
+        "balance_before": 15758326,
+        "order_params": {}
+      }
+    },
+    "settle_results": {
+      "done": true,
+      "balance_before": 15758326,
+      "balance_after": 16228776,
+      "proceeds": 470450
+    },
+    "bridge_back_tx": "0x8c11425668c42ca36427d3b19437985fe6d0219e2ef6cf5f90d86456a3632457",
+    "bridge_back_amount": 470450
+  },
+  {
+    "id": "dec3b0f2",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Ecuador",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 250,
+      "avg_price": 0.008,
+      "avg_price_cents": 0.8,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "limitless": {
+          "spent": 2,
+          "qty": 250,
+          "avg_price": 0.008,
+          "avg_price_cents": 0.8,
+          "market_id": "ecuador-1765296582376",
+          "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079"
+        }
+      },
+      "fills": [
+        {
+          "platform": "limitless",
+          "price": 0.008,
+          "price_cents": 0.8,
+          "size": 250,
+          "cost": 2
+        }
+      ],
+      "adapter_errors": {
+        "opinion": "Team Ecuador not found in fifa-world-cup-2026"
+      }
+    },
+    "platforms": {
+      "limitless": {
+        "market_id": "ecuador-1765296582376",
+        "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079",
+        "spent": 2,
+        "qty": 250
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": null,
+    "tx_hash": "0x522bb2ceb269bdf5d7d5d3c6bf0ba3e624c0be20d05d9957e6552f69a21444e9",
+    "receiving_tx_hash": null,
+    "receiving_chain_id": null,
+    "created_at": "2026-02-08T00:14:32.445637+00:00",
+    "trade_results": {
+      "limitless": {
+        "order_id": "285c166e-e1e6-4fe9-a361-a6e4b204b743",
+        "status": "MATCHED",
+        "price": 0.008,
+        "amount": 2.0
+      }
+    },
+    "transfer_results": {
+      "limitless": {
+        "tx_hash": "0xc89b9e4b865278dd2a08f9507a3023e327cf9c849aa51b9b7a0d159daa39bf7b",
+        "success": true,
+        "amount": 242500000
+      }
+    }
+  },
+  {
+    "id": "b06960f5",
+    "direction": "sell",
+    "buy_order_id": "217b156c",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Ecuador",
+    "side": "yes",
+    "platforms": {
+      "limitless": {
+        "token_id": "67842429797554693691730675026385121583977573122948492198508488923936204418079",
+        "market_id": "ecuador-1765296582376"
+      }
+    },
+    "shares_amount": 242500000,
+    "pull_tx": "0xea6a25c5b1ff21163d508a0e5eb7448dd8d09129a65e685d50855e53d520613f",
+    "status": "completed",
+    "created_at": "2026-02-08T00:15:10.403222+00:00",
+    "trade_results": {
+      "limitless": {
+        "order_id": "f0ce7fce-8a51-45dd-94f8-7a6afad0c22f",
+        "status": "MATCHED",
+        "price": 0.002,
+        "amount": 242.5,
+        "balance_before": 15758326,
+        "order_params": {}
+      }
+    },
+    "settle_results": {
+      "done": true,
+      "balance_before": 15758326,
+      "balance_after": 16228776,
+      "proceeds": 470450
+    },
+    "bridge_back_tx": "0xbb1ae7189c569f7cf07411997ed228a2a899931fdf4fe72e66282f7d234f4070",
+    "bridge_back_amount": 470450
+  },
+  {
+    "id": "5af10b88",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 12.8205,
+      "avg_price": 0.156,
+      "avg_price_cents": 15.6,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "opinion": {
+          "spent": 2,
+          "qty": 12.8205,
+          "avg_price": 0.156,
+          "avg_price_cents": 15.6,
+          "market_id": 1354,
+          "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488"
+        }
+      },
+      "fills": [
+        {
+          "platform": "opinion",
+          "price": 0.156,
+          "price_cents": 15.6,
+          "size": 12.8205,
+          "cost": 2
+        }
+      ]
+    },
+    "platforms": {
+      "opinion": {
+        "market_id": "1354",
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "spent": 2,
+        "qty": 12.8205
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": null,
+    "tx_hash": "0x9373738cc42382f6ca93fda9ed0431af39b13494e56b78584b9ee2759a29d81e",
+    "receiving_tx_hash": "0xaa71c943443e9ce04020c74b2939079355c3c3d5fa4333591ee3111669dea909",
+    "receiving_chain_id": 56,
+    "created_at": "2026-02-08T00:16:10.058685+00:00",
+    "trade_results": {
+      "opinion": {
+        "order_id": "8819334a-0483-11f1-8190-0a58a9feac02",
+        "status": "NEW",
+        "price": 0.156,
+        "amount": 1.98
+      }
+    },
+    "transfer_results": {
+      "opinion": {
+        "tx_hash": "0x7dbe1759242b7016bbdcd945945cfc3f4c83510797e78cba9b20d95a0dd2e7a1",
+        "success": true,
+        "amount": 8194871794871794872
+      }
+    }
+  },
+  {
+    "id": "444f2a85",
+    "direction": "sell",
+    "buy_order_id": "68a02541",
+    "wallet": "0x1ED167f87F77Ee1059A7bF2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "platforms": {
+      "opinion": {
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "market_id": "1354"
+      }
+    },
+    "shares_amount": 8190000000000000000,
+    "pull_tx": "0xa6c0f66df0f888bc9c22989df715d08a22ac2cb59aba966c974b447a4d5c9439",
+    "status": "trade_failed",
+    "created_at": "2026-02-08T00:22:57.461790+00:00",
+    "trade_results": {
+      "opinion": {
+        "error": "Opinion order failed: Order value 1.27 USDT is below the minimum required value of 1.30 USDT"
+      }
+    },
+    "trade_error": "Opinion order failed: Order value 1.27 USDT is below the minimum required value of 1.30 USDT"
+  },
+  {
+    "id": "485680ab",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "budget": 2,
+    "route": {
+      "direction": "buy",
+      "budget": 2,
+      "total_spent": 2,
+      "total_qty": 12.8205,
+      "avg_price": 0.156,
+      "avg_price_cents": 15.6,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "opinion": {
+          "spent": 2,
+          "qty": 12.8205,
+          "avg_price": 0.156,
+          "avg_price_cents": 15.6,
+          "market_id": 1354,
+          "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488"
+        }
+      },
+      "fills": [
+        {
+          "platform": "opinion",
+          "price": 0.156,
+          "price_cents": 15.6,
+          "size": 12.8205,
+          "cost": 2
+        }
+      ]
+    },
+    "platforms": {
+      "opinion": {
+        "market_id": "1354",
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "spent": 2,
+        "qty": 12.8205
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0xb18d70d3280d1fafa9f1eb9baba41407e3ed888a768f5a86eae00b3f3efba09f",
+    "receiving_tx_hash": "0xd4046c7a0e126149a19a46c03379bf87dc1b64388e9cd544ca249d20a9a27b8c",
+    "receiving_chain_id": 56,
+    "created_at": "2026-02-08T00:42:19.222235+00:00",
+    "trade_results": {
+      "opinion": {
+        "order_id": "24bea239-0487-11f1-810e-0a58a9feac02",
+        "status": "NEW",
+        "price": 0.156,
+        "amount": 2.0
+      }
+    },
+    "transfer_results": {
+      "opinion": {
+        "tx_hash": "0xd5e1cc4156575afefc3b3e66ab35d6a5f7a6e879a5bb6946449b4e07c5920ee1",
+        "success": true,
+        "amount": 17804871794871794872
+      }
+    }
+  },
+  {
+    "id": "f5ae082f",
+    "direction": "sell",
+    "buy_order_id": "68a02541",
+    "wallet": "0x1ED167f87F77Ee1059A7bF2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "platforms": {
+      "opinion": {
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "market_id": "1354"
+      }
+    },
+    "shares_amount": 17809999999999997952,
+    "pull_tx": "0x3bcca0287df1908654ee7fbc056c1e428636f93a6b61038b61be244d81f58a34",
+    "to_chain": 8453,
+    "status": "trade_failed",
+    "created_at": "2026-02-08T00:43:59.732717+00:00",
+    "trade_results": {
+      "opinion": {
+        "error": "Opinion order failed: Insufficient token balance: 17.8 required, but only 0 available"
+      }
+    },
+    "trade_error": "Opinion order failed: Insufficient token balance: 17.8 required, but only 0 available"
+  },
+  {
+    "id": "c78b0131",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "budget": 3,
+    "route": {
+      "direction": "buy",
+      "budget": 3,
+      "total_spent": 3,
+      "total_qty": 19.2308,
+      "avg_price": 0.156,
+      "avg_price_cents": 15.6,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "opinion": {
+          "spent": 3,
+          "qty": 19.2308,
+          "avg_price": 0.156,
+          "avg_price_cents": 15.6,
+          "market_id": 1354,
+          "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488"
+        }
+      },
+      "fills": [
+        {
+          "platform": "opinion",
+          "price": 0.156,
+          "price_cents": 15.6,
+          "size": 19.2308,
+          "cost": 3
+        }
+      ]
+    },
+    "platforms": {
+      "opinion": {
+        "market_id": "1354",
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "spent": 3,
+        "qty": 19.2308
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0x381c373d549c8d84fb4f97af97019632b1b57bdfe4bdc602fba0b2855a963e96",
+    "receiving_tx_hash": "0xfa96c1f6764a0fe2424ca61dcae01949715c624eb4a6b665fa50ffd04c67ec58",
+    "receiving_chain_id": 56,
+    "created_at": "2026-02-08T00:48:31.113624+00:00",
+    "trade_results": {
+      "opinion": {
+        "order_id": "03c7545e-0488-11f1-8e4b-0a58a9feac02",
+        "status": "NEW",
+        "price": 0.156,
+        "amount": 3.0
+      }
+    },
+    "transfer_results": {
+      "opinion": {
+        "tx_hash": "0xeb2b4e753b483ac1ce58427236d79cd763aa6834f5b20b9e83ed9b44d37be243",
+        "success": true,
+        "amount": 33834871794871792824
+      }
+    }
+  },
+  {
+    "id": "37aaf3d4",
+    "direction": "sell",
+    "buy_order_id": "68a02541",
+    "wallet": "0x1ED167f87F77Ee1059A7bF2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "platforms": {
+      "opinion": {
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "market_id": "1354"
+      }
+    },
+    "shares_amount": 33830000000000000000,
+    "pull_tx": "0x596271e8177857707cf5dc024bdb24e4ce804c9776e2ba77de1170b6b51989f6",
+    "to_chain": 8453,
+    "status": "completed",
+    "created_at": "2026-02-08T00:50:01.312027+00:00",
+    "trade_results": {
+      "opinion": {
+        "order_id": "1c8c74b6-0488-11f1-bddf-0a58a9feac02",
+        "status": "NEW",
+        "price": 0.155,
+        "amount": 33.83,
+        "balance_before": 183234984569957908,
+        "order_params": {}
+      }
+    },
+    "settle_results": {
+      "done": true,
+      "balance_before": 183234984569957908,
+      "balance_after": 4926884984569957908,
+      "proceeds": 4743650000000000000
+    },
+    "bridge_back_tx": "0x4302d1c834e1ef6b7fc7f6d7de142b7db20d946bd5a675cddfe7c5056d66df53",
+    "bridge_back_amount": 4740000000000000000,
+    "receiving_tx_hash": "0xcdcfddc7557c2fbd92f4d115365b29de70e471a6297d91a76dd07fadbf1aa538",
+    "receiving_chain_id": 8453
+  },
+  {
+    "id": "50dcfd79",
+    "wallet": "0x1ed167f87f77ee1059a7bf2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "budget": 3,
+    "route": {
+      "direction": "buy",
+      "budget": 3,
+      "total_spent": 3,
+      "total_qty": 19.2308,
+      "avg_price": 0.156,
+      "avg_price_cents": 15.6,
+      "unfilled": 0,
+      "platforms_used": 1,
+      "per_platform": {
+        "opinion": {
+          "spent": 3,
+          "qty": 19.2308,
+          "avg_price": 0.156,
+          "avg_price_cents": 15.6,
+          "market_id": 1354,
+          "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488"
+        }
+      },
+      "fills": [
+        {
+          "platform": "opinion",
+          "price": 0.156,
+          "price_cents": 15.6,
+          "size": 19.2308,
+          "cost": 3
+        }
+      ]
+    },
+    "platforms": {
+      "opinion": {
+        "market_id": "1354",
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "spent": 3,
+        "qty": 19.2308
+      }
+    },
+    "status": "filled",
+    "approve_tx_hash": null,
+    "from_chain": 8453,
+    "tx_hash": "0x4d23bd17a9d3aec27e7b7c65a4ba7e11229a4d534d48b421fcad98153583f02c",
+    "receiving_tx_hash": "0x71683ca5e3eab92308e567cffb32ae2a72e925fd198bb2e2a36b883e18929d47",
+    "receiving_chain_id": 56,
+    "created_at": "2026-02-08T00:52:18.090711+00:00",
+    "trade_results": {
+      "opinion": {
+        "order_id": "89d1b93f-0488-11f1-bccc-0a58a9feac02",
+        "status": "NEW",
+        "price": 0.156,
+        "amount": 3.0
+      }
+    },
+    "transfer_results": {
+      "opinion": {
+        "tx_hash": "0x46131557242f6a5865ddb5156c1faab2ec0647f54c59e758edbae694c039a528",
+        "success": true,
+        "amount": 16024871794871794872
+      }
+    }
+  },
+  {
+    "id": "909d781c",
+    "direction": "sell",
+    "buy_order_id": "68a02541",
+    "wallet": "0x1ED167f87F77Ee1059A7bF2ec21c302563334ef7",
+    "event_id": "fifa-world-cup-2026",
+    "team": "Spain",
+    "side": "yes",
+    "platforms": {
+      "opinion": {
+        "token_id": "109837041531451287161298527022447290894418066118946287563639981764887484653488",
+        "market_id": "1354"
+      }
+    },
+    "shares_amount": 16030000000000002048,
+    "pull_tx": "0x545e45a191924c837f9a8379403ab3eb8a228af4e832010f527c22b6e2645e21",
+    "to_chain": 8453,
+    "status": "trade_failed",
+    "created_at": "2026-02-08T00:53:39.656223+00:00",
+    "trade_results": {
+      "opinion": {
+        "error": "Opinion order failed: Insufficient token balance: 16.03 required, but only 0 available"
+      }
+    },
+    "trade_error": "Opinion order failed: Insufficient token balance: 16.03 required, but only 0 available"
   }
 ]

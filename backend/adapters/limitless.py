@@ -42,6 +42,12 @@ async def get_orderbook(event_id: str, team: str, side: str = "yes") -> dict:
     async with httpx.AsyncClient(timeout=10) as client:
         resp = await client.get(f"{API_URL}/markets/{slug}/orderbook", headers=headers)
         data = resp.json()
+        # Get token IDs from market data
+        mresp = await client.get(f"{API_URL}/markets/{slug}", headers=headers)
+        mdata = mresp.json()
+
+    tokens = mdata.get("tokens", {})
+    token_id = tokens.get("yes") if side == "yes" else tokens.get("no")
 
     divisor = 10 ** USDC_DECIMALS
     raw_bids = [{"price": float(b["price"]), "size": float(b["size"]) / divisor} for b in data.get("bids", [])]
@@ -59,6 +65,7 @@ async def get_orderbook(event_id: str, team: str, side: str = "yes") -> dict:
     return {
         "platform": "limitless",
         "market_id": slug,
+        "token_id": str(token_id) if token_id else None,
         "team": team, "side": side,
         "asks": asks, "bids": bids,
         "best_ask": asks[0]["price_cents"] if asks else 0,

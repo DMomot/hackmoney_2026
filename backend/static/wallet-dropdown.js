@@ -1,7 +1,7 @@
 // Wallet dropdown with stablecoin balances across chains
 // Uses public RPCs, no API keys needed
 
-const CHAINS = [
+const WD_CHAINS = [
   { id: 'eth',  name: 'Ethereum', rpc: 'https://eth.drpc.org',         chainId: 1,     scan: 'etherscan.io' },
   { id: 'poly', name: 'Polygon',  rpc: 'https://polygon.drpc.org',     chainId: 137,   scan: 'polygonscan.com' },
   { id: 'bnb',  name: 'BNB',      rpc: 'https://bsc.drpc.org',         chainId: 56,    scan: 'bscscan.com' },
@@ -31,7 +31,7 @@ const STABLES = {
 // balanceOf(address) selector
 const BAL_SEL = '0x70a08231';
 
-async function fetchBalance(rpc, tokenAddr, wallet, decimals) {
+async function wdFetchBalance(rpc, tokenAddr, wallet, decimals) {
   const data = BAL_SEL + wallet.slice(2).toLowerCase().padStart(64, '0');
   try {
     const resp = await fetch(rpc, {
@@ -125,9 +125,9 @@ async function loadBalances() {
   body.innerHTML = '<div class="wd-loading">Loading balances…</div>';
 
   const tasks = [];
-  for (const chain of CHAINS) {
+  for (const chain of WD_CHAINS) {
     for (const token of STABLES[chain.id]) {
-      tasks.push({ chain, token, promise: fetchBalance(chain.rpc, token.addr, walletAddress, token.decimals) });
+      tasks.push({ chain, token, promise: wdFetchBalance(chain.rpc, token.addr, walletAddress, token.decimals) });
     }
   }
 
